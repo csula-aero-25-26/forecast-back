@@ -15,8 +15,19 @@ services:
       - db
     restart: unless-stopped
 
+  model-service:
+    build: ./model-service
+    container_name: flask-model
+    ports:
+      - "5000:5000"
+    networks:
+      - app-net
+    restart: unless-stopped
+
 networks:
   db:
+    driver: bridge
+  app-net:
     driver: bridge
 
 volumes:
