@@ -125,12 +125,8 @@ Response:
 
 ## Integration Notes
 - The Spring Boot backend calls this service at:
-  ```
-  http://localhost:5000/predict
-  ```
-  (or `http://model-service:5000/predict` (*I just used localhost*) when both run inside Docker Compose)
-- Ensure that the Flask and PostgreSQL containers are running before backend startup.
-
+  http://flask-model:5000/predict
+  (inside Docker Compose, using the container name)
 ---
 
 ## Dependencies

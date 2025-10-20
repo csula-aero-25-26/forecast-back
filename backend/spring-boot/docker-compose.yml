@@ -12,8 +12,7 @@ services:
     ports:
       - "5332:5432"
     networks:
-      - db
-    restart: unless-stopped
+      - app-net
 
   model-service:
     build: ./model-service
@@ -22,11 +21,19 @@ services:
       - "5000:5000"
     networks:
       - app-net
-    restart: unless-stopped
+
+  backend:
+    build: ./
+    container_name: spring-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - model-service
+    networks:
+      - app-net
 
 networks:
-  db:
-    driver: bridge
   app-net:
     driver: bridge
 

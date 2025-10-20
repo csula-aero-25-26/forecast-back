@@ -1,3 +1,5 @@
+# ---- FLASK MODEL SERVICE DOCKERFILE ----
+
 # Base image with Python
 FROM python:3.12-slim
 
