@@ -14,10 +14,28 @@ From there, you can see/access the tables & contents using basic SQL commands.
 
 ---
 
-## Running Full Stack with Docker
+## Running the Full Stack with Docker
 
-To start the backend, database, and Flask model together:
+To start everything (backend, database, and model service) in containers:
 
 ```bash
 docker compose up --build
 ```
+
+If you’re coding in IntelliJ and want live debugging:
+
+1. Run only the database and model service in Docker:
+```bash
+docker compose up db model-service
+```
+
+2. In IntelliJ → Run Configuration → Active Profiles:
+```
+dev
+```
+
+3. The backend will connect automatically to:
+- Postgres: localhost:5332
+- Flask: localhost:5000
+
+For integration testing or final demos, switch back to Docker Compose.

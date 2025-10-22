@@ -1,5 +1,8 @@
 # ---- SPRING BOOT DOCKERFILE ----
 FROM eclipse-temurin:21-jdk
+
+ENV SPRING_PROFILES_ACTIVE=docker
+
 WORKDIR /app
 # Copy target jav files
 COPY target/*.jar app.jar
