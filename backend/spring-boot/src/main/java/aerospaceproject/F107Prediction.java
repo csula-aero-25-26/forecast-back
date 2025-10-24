@@ -25,6 +25,10 @@ public class F107Prediction {
 
     private LocalDate date;
 
+    @ManyToOne
+    @JoinColumn(name = "input_data_id")
+    private F107InputData input;
+
     @Column(name = "predicted_value")
     private Double predictedValue;
 

@@ -1,0 +1,42 @@
+# === GLOBAL IGNORE SETTINGS ===
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.iml
+
+# === BUILD / OUTPUT ===
+target/
+build/
+bin/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# === VIRTUAL ENVIRONMENTS ===
+venv/
+.venv/
+backend/spring-boot/model-service/venv/
+backend/spring-boot/model-service/.venv/
+
+# === DEPENDENCY CACHES ===
+.gradle/
+.mvn/
+!gradle/wrapper/gradle-wrapper.jar
+
+# === SYSTEM AND TEMPORARY FILES ===
+.DS_Store
+*.log
+logs/
+tmp/
+
+# === ENVIRONMENT AND CONFIG FILES ===
+*.env
+*.properties.local
+
+# === OTHER COMMON IGNORES ===
+__pycache__/
+*.pyc
+*.pyo

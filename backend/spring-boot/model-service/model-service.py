@@ -20,7 +20,7 @@ ap_features = [
 FEATURES = lag_features + ap_features
 
 # Listens for /predict endpoint
-@app.post("/predict")
+@app.route("/predict", methods=['POST'])
 def predict():
     data = request.get_json()
 

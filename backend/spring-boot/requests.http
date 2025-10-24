@@ -5,3 +5,4 @@ GET http://localhost:8080
 GET http://localhost:8080/api/predictions
 
 ###
+POST http://localhost:8080/api/predictions/run
