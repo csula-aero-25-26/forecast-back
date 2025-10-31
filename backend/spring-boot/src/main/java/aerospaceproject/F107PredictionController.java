@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.web.client.RestTemplate;
 import java.util.Map;
+import java.util.Optional;
 
 
 @RestController
@@ -25,9 +26,14 @@ public class F107PredictionController {
         this.restTemplate = restTemplate;
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public List<F107Prediction> getPredictions() {
         return service.getAllPredictions();
+    }
+
+    @GetMapping("/{id}")
+    public Optional<F107Prediction> getPrediction(@PathVariable Long id) {
+        return service.getPrediction(id);
     }
 
     @PostMapping

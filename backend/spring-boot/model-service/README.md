@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 ### 4. Run the Flask app
 ```bash
-python model_service.py
+python model-service.py
 ```
 
 The service will start on **http://flask-model:5000**
@@ -96,8 +96,25 @@ curl -X POST -H "Content-Type: application/json" \
     "ap_max_lag1":28,"ap_max_lag2":29,"ap_max_lag3":31
   }
 }' \
-http://flask-model:5000/predict
+http://127.0.0.1:5000/predict
 ```
+## Example 2
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{
+"lags": [150,149,148,147,146,145,144,143,142,141,140,139,138,137,136,135,134,133,132,131,130,129,128,127,126,125,124],
+"ap_mean": 15,
+"ap_max": 30,
+"ap_mean_lag1": 14,
+"ap_mean_lag2": 14,
+"ap_mean_lag3": 13,
+"ap_max_lag1": 28,
+"ap_max_lag2": 29,
+"ap_max_lag3": 31
+}' http://localhost:8080/api/input/predict
+```
+
+
 
 ```bash
 Invoke-WebRequest -Uri "http://localhost:8080/api/predictions/run" -Method POST `

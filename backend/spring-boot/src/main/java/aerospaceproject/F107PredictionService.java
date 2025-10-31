@@ -1,14 +1,10 @@
 package aerospaceproject;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class F107PredictionService {
@@ -25,6 +21,10 @@ public class F107PredictionService {
 
     public List<F107Prediction> getAllPredictions() {
         return repo.findAll();
+    }
+
+    public Optional<F107Prediction> getPrediction(Long id) {
+        return repo.findById(id);
     }
 
     public F107Prediction savePrediction(F107Prediction prediction) {

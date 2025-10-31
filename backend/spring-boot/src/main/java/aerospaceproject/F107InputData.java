@@ -18,7 +18,7 @@ public class F107InputData {
     private List<Double> lags;
 
     private Double ap_mean;
-    private Double am_max;
+    private Double ap_max;
 
     private Double ap_mean_lag1;
     private Double ap_mean_lag2;
@@ -37,7 +37,7 @@ public class F107InputData {
         this.id = id;
         this.lags = lags;
         this.ap_mean = ap_mean;
-        this.am_max = am_max;
+        this.ap_max = am_max;
         this.ap_mean_lag1 = ap_mean_lag1;
         this.ap_mean_lag2 = ap_mean_lag2;
         this.ap_mean_lag3 = ap_mean_lag3;
@@ -70,12 +70,12 @@ public class F107InputData {
         this.ap_mean = ap_mean;
     }
 
-    public Double getAm_max() {
-        return am_max;
+    public Double getAp_max() {
+        return ap_max;
     }
 
-    public void setAm_max(Double am_max) {
-        this.am_max = am_max;
+    public void setAp_max(Double ap_max) {
+        this.ap_max = ap_max;
     }
 
     public Double getAp_mean_lag1() {

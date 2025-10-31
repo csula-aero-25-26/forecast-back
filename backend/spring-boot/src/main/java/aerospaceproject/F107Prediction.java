@@ -56,6 +56,14 @@ public class F107Prediction {
         return date;
     }
 
+    public F107InputData getInput() {
+        return input;
+    }
+
+    public void setInput(F107InputData input) {
+        this.input = input;
+    }
+
     public void setDate(LocalDate date) {
         this.date = date;
     }
