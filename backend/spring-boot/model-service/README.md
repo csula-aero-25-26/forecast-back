@@ -45,7 +45,7 @@ Returns F10.7 flux predictions (JSON)
 
 ---
 
-## 🚀 Endpoints
+## Endpoints
 
 ### `GET /`
 Health check.
@@ -103,7 +103,7 @@ Runs a prediction using provided feature data.
 
 ---
 
-# 🧠 How It Works
+# How It Works
 
 1. On startup:
     - Loads `lgb_f107_lag27_ap_lag3.pkl` from `/models`.
