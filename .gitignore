@@ -40,3 +40,20 @@ tmp/
 __pycache__/
 *.pyc
 *.pyo
+
+# Maven backup files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Test or coverage output
+test-output/
+*.coverage
