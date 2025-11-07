@@ -9,6 +9,7 @@ services:
       PGDATA: /data/postgres
     volumes:
       - db:/data/postgres
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # 👈 add this line
     ports:
       - "5332:5432"
     networks:
@@ -16,11 +17,24 @@ services:
 
   model-service:
     build: ./model-service
-    container_name: flask-model
+    container_name: model-service
     ports:
       - "5000:5000"
     networks:
       - app-net
+
+  fetch-service:
+    build: ./fetch-service
+    container_name: fetch-service
+    environment:
+      - DATABASE_URL=postgresql://aspteam:asp20252026@db:5432/forecastdb
+    depends_on:
+      - db
+    networks:
+      - app-net
+    ports:
+      - "5500:5500"
+
 
   backend:
     build: ./

@@ -1,22 +1,22 @@
-# ---- FLASK MODEL SERVICE DOCKERFILE ----
+# ---- MODEL SERVICE (FastAPI) ----
 
-# Base image with Python
+# Base image
 FROM python:3.12-slim
 
-# Install required system libraries for LightGBM
+# Install LightGBM dependency
 RUN apt-get update && apt-get install -y libgomp1 && rm -rf /var/lib/apt/lists/*
 
-# Set work directory
+# Set working directory
 WORKDIR /app
 
-# Copy all files (.py, .pkl, requirements.txt)
+# Copy everything into the container
 COPY . .
 
-# Install dependencies
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port Flask runs on
+# Expose FastAPI port
 EXPOSE 5000
 
-# Start the Flask app
-CMD ["python", "model-service.py"]
+# Start FastAPI using Uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]
