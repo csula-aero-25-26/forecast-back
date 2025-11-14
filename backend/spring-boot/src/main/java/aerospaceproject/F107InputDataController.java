@@ -62,6 +62,7 @@ public class F107InputDataController {
                         .body("Fetch-service returned no 'features' object.");
             }
 
+            // Manually create a list of lags from returned features
             List<Double> lags = new ArrayList<>();
             for (int i = 1; i <= 27; i++) {
                 String key = "f107_lag_" + i;

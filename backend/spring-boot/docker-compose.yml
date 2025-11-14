@@ -1,3 +1,5 @@
+# GPT FIX
+
 services:
   db:
     container_name: postgres-spring-boot
@@ -9,7 +11,7 @@ services:
       PGDATA: /data/postgres
     volumes:
       - db:/data/postgres
-      - ./db/init:/docker-entrypoint-initdb.d:ro   # 👈 add this line
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5332:5432"
     networks:
@@ -35,7 +37,6 @@ services:
     ports:
       - "5500:5500"
 
-
   backend:
     build: ./
     container_name: spring-backend
@@ -44,6 +45,9 @@ services:
     depends_on:
       - db
       - model-service
+      - fetch-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
     networks:
       - app-net
 
