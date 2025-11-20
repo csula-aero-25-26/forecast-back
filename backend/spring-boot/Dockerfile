@@ -1,12 +1,20 @@
-# ---- SPRING BOOT DOCKERFILE ----
+# ---- BUILD STAGE ----
+FROM maven:3.9-eclipse-temurin-21 AS build
+
+WORKDIR /app
+
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn -q -e -DskipTests package
+
+# ---- RUN STAGE ----
 FROM eclipse-temurin:21-jdk
 
 ENV SPRING_PROFILES_ACTIVE=docker
 
 WORKDIR /app
-# Copy target jav files
-COPY target/*.jar app.jar
-# Expose port 8080 to be our endpoint
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8080
-# Run the java app
 ENTRYPOINT ["java", "-jar", "app.jar"]
