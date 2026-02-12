@@ -1,0 +1,29 @@
+package aerospaceproject.phase2.controllers;
+
+import aerospaceproject.phase2.entities.ModelRegistry;
+import aerospaceproject.phase2.services.ModelRegistryService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/models")
+public class ModelRegistryController {
+
+    private final ModelRegistryService service;
+
+    public ModelRegistryController(ModelRegistryService service) {
+        this.service = service;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ModelRegistry> getOne(@PathVariable String id) {
+        return service.getModel(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ModelRegistry create(@RequestBody ModelRegistry model) {
+        return service.saveModel(model);
+    }
+}

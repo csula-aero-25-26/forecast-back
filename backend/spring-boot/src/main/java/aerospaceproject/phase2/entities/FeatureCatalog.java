@@ -1,4 +1,4 @@
-package aerospaceproject.phase2;
+package aerospaceproject.phase2.entities;
 
 import jakarta.persistence.*;
 import java.time.Instant;

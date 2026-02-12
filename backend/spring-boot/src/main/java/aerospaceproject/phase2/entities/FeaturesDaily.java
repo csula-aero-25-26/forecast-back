@@ -1,9 +1,7 @@
-package aerospaceproject.phase2;
+package aerospaceproject.phase2.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "features_daily")
