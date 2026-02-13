@@ -57,7 +57,12 @@ public class F107InputDataController {
             logger.info("Calling fetch-service at {}", fetchUrl);
 
             // Fetch latest features
-            ResponseEntity<Map> fetchResponse = restTemplate.getForEntity(fetchUrl, Map.class);
+            String modelId = "lgb_f107_lag27_ap_lag3_horizon_1";
+            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
+
+            ResponseEntity<Map> fetchResponse =
+                    restTemplate.getForEntity(fetchEndpoint, Map.class);
+
             if (!fetchResponse.getStatusCode().is2xxSuccessful() ||
                     fetchResponse.getBody() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
@@ -73,41 +78,57 @@ public class F107InputDataController {
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                         .body("Fetch-service returned no 'features' object.");
             }
-
-            // Manually create a list of lags from returned features
-            List<Double> lags = new ArrayList<>();
-            for (int i = 1; i <= 27; i++) {
-                String key = "f107_lag_" + i;
-                Object val = features.get(key);
-                if (val == null) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body("Missing feature from fetch-service: " + key);
-                }
-                double d = ((Number) val).doubleValue();
-                lags.add(d);
-            }
-
             // Create and save input to DB
             F107InputData newInput = new F107InputData();
 
-            newInput.setLags(lags);
+            // Manually create a list of lags from returned features
+            List<Double> lags = new ArrayList<>();
 
-            newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
-            newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
+            if (features.containsKey("f107_lag_1")) {
+                for (int i = 1; i <= 27; i++) {
+                    String key = "f107_lag_" + i;
+                    Object val = features.get(key);
+                    if (val != null) {
+                        lags.add(((Number) val).doubleValue());
+                    }
+                }
+                newInput.setLags(lags);
+            }
 
-            newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
-            newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
-            newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
 
-            newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
-            newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
-            newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
+
+
+
+
+            if (features.containsKey("ap_mean"))
+                newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
+
+            if (features.containsKey("ap_max"))
+                newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag1"))
+                newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag2"))
+                newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag3"))
+                newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
+
+            if (features.containsKey("ap_max_lag1"))
+                newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
+
+            if (features.containsKey("ap_max_lag2"))
+                newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
+
+            if (features.containsKey("ap_max_lag3"))
+                newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
+
 
             F107InputData savedInput = inputRepo.save(newInput);
 
-            String modelId = "lgb_f107_lag27_ap_lag3";
-            int horizonDays = 1;
-            String predictUrl = buildPredictUrl(modelUrl, modelId, horizonDays);
+            String predictUrl = buildPredictUrl(modelUrl, modelId);
+
 
             logger.info("Calling model-service at {}", predictUrl);
 
@@ -160,16 +181,20 @@ public class F107InputDataController {
 
     @GetMapping("/predict-latest-v2")
     public ResponseEntity<?> predictFromLatestV2(
-            @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3") String modelId,
-            @RequestParam(defaultValue = "1") int horizonDays) {
+            @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3_horizon_1") String modelId
+    )
+    {
 
-        logger.info("Prediction requested with model={} horizonDays={}",
-                modelId, horizonDays);
+        logger.info("Prediction requested with model={}", modelId);
+
         try {
             logger.info("Calling fetch-service at {}", fetchUrl);
 
             // Fetch latest features
-            ResponseEntity<Map> fetchResponse = restTemplate.getForEntity(fetchUrl, Map.class);
+            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
+            ResponseEntity<Map> fetchResponse =
+                    restTemplate.getForEntity(fetchEndpoint, Map.class);
+
             if (!fetchResponse.getStatusCode().is2xxSuccessful() ||
                     fetchResponse.getBody() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
@@ -186,38 +211,54 @@ public class F107InputDataController {
                         .body("Fetch-service returned no 'features' object.");
             }
 
-            // Manually create a list of lags from returned features
-            List<Double> lags = new ArrayList<>();
-            for (int i = 1; i <= 27; i++) {
-                String key = "f107_lag_" + i;
-                Object val = features.get(key);
-                if (val == null) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body("Missing feature from fetch-service: " + key);
-                }
-                double d = ((Number) val).doubleValue();
-                lags.add(d);
-            }
 
             // Create and save input to DB
             F107InputData newInput = new F107InputData();
 
-            newInput.setLags(lags);
+            // Manually create a list of lags from returned features
+            List<Double> lags = new ArrayList<>();
 
-            newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
-            newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
+            if (features.containsKey("f107_lag_1")) {
+                for (int i = 1; i <= 27; i++) {
+                    String key = "f107_lag_" + i;
+                    Object val = features.get(key);
+                    if (val != null) {
+                        lags.add(((Number) val).doubleValue());
+                    }
+                }
+                newInput.setLags(lags);
+            }
 
-            newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
-            newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
-            newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
 
-            newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
-            newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
-            newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
+            if (features.containsKey("ap_mean"))
+                newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
+
+            if (features.containsKey("ap_max"))
+                newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag1"))
+                newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag2"))
+                newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag3"))
+                newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
+
+            if (features.containsKey("ap_max_lag1"))
+                newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
+
+            if (features.containsKey("ap_max_lag2"))
+                newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
+
+            if (features.containsKey("ap_max_lag3"))
+                newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
+
 
             F107InputData savedInput = inputRepo.save(newInput);
 
-            String predictUrl = buildPredictUrl(modelUrl, modelId, horizonDays);
+            String predictUrl = buildPredictUrl(modelUrl, modelId);
+
 
             logger.info("Calling model-service at {}", predictUrl);
 
@@ -269,13 +310,11 @@ public class F107InputDataController {
     }
 
     // Helper method to build the model-service predict URL
-    private String buildPredictUrl(String modelUrl, String modelId, int horizonDays) {
+    private String buildPredictUrl(String modelUrl, String modelId) {
         String base = modelUrl;
         if (base.endsWith("/"))
-            base = base.substring(0, base.length()-1);
-        if (base.endsWith("predict"))
-            base = base.substring(0, base.length() - "/predict".length());
-        return String.format("%s/predict/%s/%d", base, modelId, horizonDays);
+            base = base.substring(0, base.length() - 1);
+        return String.format("%s/predict/%s", base, modelId);
     }
 
     // Sends entered input to model-service and returns the prediction/saves it to db
@@ -289,12 +328,6 @@ public class F107InputDataController {
             Map<String, Object> payload = new HashMap<>();
             Map<String, Object> features = new HashMap<>();
 
-            List<Double> lags = input.getLags();
-            if (lags != null) {
-                for (int i = 0; i < lags.size(); i++) {
-                    features.put("f107_lag_" + (i + 1), lags.get(i));
-                }
-            }
 
             features.put("lags", input.getLags());
             features.put("ap_mean", input.getAp_mean());
@@ -309,9 +342,11 @@ public class F107InputDataController {
             payload.put("features", features);
 
             // FastAPI Endpoint
-            String modelId = "lgb_f107_lag27_ap_lag3";
-            int horizonDays = 1;
-            String predictUrl = String.format("%s/predict/%s/%d", modelUrl, modelId, horizonDays);
+            String modelId = "lgb_f107_lag27_ap_lag3_horizon_1";
+
+
+            String predictUrl = String.format("%s/predict/%s", modelUrl, modelId);
+
 
             // Send the request
             HttpHeaders headers = new HttpHeaders();

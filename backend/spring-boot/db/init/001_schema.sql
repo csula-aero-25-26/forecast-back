@@ -13,10 +13,25 @@ CREATE TABLE IF NOT EXISTS model_registry (
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
-    'lgb_f107_lag27_ap_lag3', 'lightgbm',
-    'LightGBM model using 27-day lagged F10.7 and 3-day lagged ap indices'
+    'lgb_f107_lag27_ap_lag3_horizon_1', 'lightgbm',
+    'LightGBM model using 27-day lagged F10.7 and 3-day lagged ap indices, predicting 1 day ahead'
 )
 ON CONFLICT (model_id) DO NOTHING;
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'linreg_flux_27_lags_ssn_horizon_7',
+           'linear_regression',
+           'Linear regression using 27 F10.7 lags + SN, predicting 1 week ahead'
+       );
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'persistence_horizon_7',
+           'baseline',
+           'Persistence baseline model, predicting 1 week ahead'
+       );
+
 
 
 -- ️Predictions --
@@ -54,6 +69,7 @@ CREATE TABLE IF NOT EXISTS feature_catalog (
 INSERT INTO feature_catalog (name, source, transformation, description)
 VALUES
     -- F107 lags
+    ('F10.7obs','NOAA_F107','current','Observed daily F10.7 solar flux'),
     ('f107_lag_1',  'NOAA_F107', 'lag(1)',  'F10.7 value 1 day ago'),
     ('f107_lag_2',  'NOAA_F107', 'lag(2)',  'F10.7 value 2 days ago'),
     ('f107_lag_3',  'NOAA_F107', 'lag(3)',  'F10.7 value 3 days ago'),
@@ -90,7 +106,10 @@ VALUES
     ('ap_mean_lag2', 'NOAA_AP', 'lag(2)', 'Ap mean 2 days ago'),
     ('ap_max_lag2', 'NOAA_AP', 'lag(2)', 'Ap max 2 days ago'),
     ('ap_mean_lag3', 'NOAA_AP', 'lag(3)', 'Ap mean 3 days ago'),
-    ('ap_max_lag3', 'NOAA_AP', 'lag(3)', 'Ap max 3 days ago')
+    ('ap_max_lag3', 'NOAA_AP', 'lag(3)', 'Ap max 3 days ago'),
+
+    -- SSN features
+    ('SN', 'SILSO', 'current', 'Daily international sunspot number')
 ON CONFLICT (name) DO NOTHING;
 
 
@@ -102,19 +121,39 @@ CREATE TABLE IF NOT EXISTS model_features (
 );
 
 INSERT INTO model_features (model_id, feature_name)
-SELECT 'lgb_f107_lag27_ap_lag3', name
+SELECT 'linreg_flux_27_lags_ssn_horizon_7', name
 FROM feature_catalog
 WHERE name IN (
-    'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
+    'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
     'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
     'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
     'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
     'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
     'f107_lag_26','f107_lag_27',
-    'ap_mean','ap_max',
-    'ap_mean_lag1','ap_max_lag1','ap_mean_lag2','ap_max_lag2','ap_mean_lag3','ap_max_lag3'
+    'SN'
 )
 ON CONFLICT (model_id, feature_name) DO NOTHING;
+
+INSERT INTO model_features (model_id, feature_name)
+SELECT 'lgb_f107_lag27_ap_lag3_horizon_1', name
+FROM feature_catalog
+WHERE name IN (
+               'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
+               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
+               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
+               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
+               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
+               'f107_lag_26','f107_lag_27',
+               'ap_mean','ap_max',
+               'ap_mean_lag1','ap_max_lag1','ap_mean_lag2','ap_max_lag2','ap_mean_lag3','ap_max_lag3'
+    )
+    ON CONFLICT (model_id, feature_name) DO NOTHING;
+
+INSERT INTO model_features (model_id, feature_name)
+VALUES
+    ('persistence_horizon_7','F10.7obs')
+    ON CONFLICT DO NOTHING;
+
 
 
 -- Features Daily (Actual Features Used by Model) --

@@ -3,7 +3,7 @@
 ## Overview
 The **Fetch Service** is a Python FastAPI microservice responsible for **retrieving and processing raw solar and geomagnetic data**.  
 It builds model-ready feature datasets and provides the most recent feature row to the **Model Service** for prediction.  
-This service supports multiple model-specific feature generation scripts (e.g., `lgb_f107_lag27_ap_lag3.py`), allowing different forecasting models to be added or updated without changing the service’s structure.
+This service supports multiple model-specific feature generation scripts (e.g., `lgb_f107_lag27_ap_lag3_horizon_1.py`), allowing different forecasting models to be added or updated without changing the service’s structure.
 
 ---
 
@@ -57,10 +57,12 @@ Health check.
 {"status": "ok", "service": "fetch-service"}
 ```
 
-### `GET /latest`
-Returns the **most recent feature row** for model-service consumption.
+### `GET /latest/{model_id}`
+
+Returns the **most recent** feature row for the specified model.
 ```json
 {
+  "model_id": "lgb_f107_lag27_ap_lag3_horizon_1",
   "features": {
     "f107_lag_1": 145.2,
     "f107_lag_2": 143.8,
@@ -76,10 +78,10 @@ Returns the **most recent feature row** for model-service consumption.
 # How It Works
 
 1. **Model-specific feature generation**  
-   Each model has a corresponding Python file in `/models` (e.g., `lgb_f107_lag27_ap_lag3.py`) that defines how its features are constructed from external input dataset.  
+   Each model has a corresponding Python file in `/models` (e.g., `lgb_f107_lag27_ap_lag3_horizon_1.py`) that defines how its features are constructed from external input dataset.  
    Additional models can be added by following the same pattern; the service dynamically imports and executes the correct script.
 
-2. **`/latest` Endpoint**  
+2. **`/latest/{model_id}` Endpoint**  
    When called, the endpoint:
     - Downloads the latest input data file.
     - Cleans and formats it into a Pandas DataFrame.
@@ -140,11 +142,11 @@ INFO:     Uvicorn running on http://0.0.0.0:5500
 ## Integration Notes
 - The **Spring Boot backend** calls this service at:
   ```
-  http://fetch-service:5500/latest
+  http://fetch-service:5500/latest/{model_id}
   ```
 - The **Model Service** consumes this JSON response and uses it for prediction:
   ```
-  http://model-service:5000/predict/{model_id}/{horizon_days}
+  http://model-service:5000/predict/{model_id}
   ```
 - Both microservices communicate internally using Docker’s `app-net` bridge.
 

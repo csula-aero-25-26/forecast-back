@@ -1,7 +1,7 @@
-# Model Service (Flask + LightGBM)
+# Model Service (FastAPI + Multi-Model Inference)
 
-This folder contains the **Flask-based model service** used by the Spring Boot backend to perform real-time F10.7 solar flux predictions.  
-The service loads a serialized **LightGBM** model (`model.pkl`) exported with **Joblib** and exposes it through a REST API endpoint (`/predict`).
+This folder contains the **FastAPI-based model service** used by the Spring Boot backend to perform real-time F10.7 solar flux predictions.  
+The service dynamically loads serialized model files (`{model_id}.pkl`) and retrieves feature definitions from PostgreSQL exported with **Joblib**, exposing them through a REST API endpoint (`/predict/{model_id}`).
 
 ---
 
@@ -9,8 +9,11 @@ The service loads a serialized **LightGBM** model (`model.pkl`) exported with **
 ```
 model-service/
 │
-├── model_service.py          # Flask application serving the model
-├── model.pkl   # Serialized LightGBM model (via Joblib)
+├── app.py          # FastAPI application serving the model
+├── models/
+├──── lgb_f107_lag27_ap_lag3_horizon_1.pkl
+├──── linreg_flux_27_lags_ssn_horizon_7.pkl
+├──── persistence_horizon_7.pkl
 ├── requirements.txt          # Python dependencies
 ├── Dockerfile                # Container build for model service
 └── README.md                 # This file
@@ -20,16 +23,18 @@ model-service/
 
 ## Features
 - Loads and serves the trained LightGBM model for inference.  
-- Exposes a `/predict` POST endpoint that accepts JSON input and returns a predicted F10.7 value.  
+- Exposes a `/predict/{model_id}` POST endpoint that accepts JSON input and returns a predicted F10.7 value.  
 - Integrated with **Docker Compose** for containerized deployment.  
 - Communicates with the **Spring Boot backend** via HTTP (JSON).  
 
 ---
 
 ## How It Works
-1. The Flask app loads `model.pkl` using **Joblib** when the container starts.  
-2. The `/predict` endpoint receives feature data (JSON) from the Spring Boot backend.  
-3. The model performs inference and returns the predicted flux value as JSON.  
+1. A request is made to `/predict/{model_id}`.
+2. The service loads `{model_id}.pkl` dynamically.
+3. The required feature list is retrieved from PostgreSQL (`model_features` table).
+4. Input features are validated.
+5. The model performs inference and returns predicted flux.
 
 ---
 
@@ -55,12 +60,12 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 4. Run the Flask app
+### 4. Run the app
 ```bash
-python model-service.py
+python app.py
 ```
 
-The service will start on **http://flask-model:5000**
+The service will start on **http://localhost:5000**
 
 ---
 
@@ -74,29 +79,26 @@ docker compose up --build
 ```
 
 This will:
-- Build the Flask model image (`spring-boot-model-service`)  
-- Start the container (`flask-model`)  
-- Expose the service at `http://flask-model:5000/predict`
+- Build the FastAPI model image (`spring-boot-model-service`)  
+- Start the container (`model-service`)  
+- Expose the service at `http://localhost:5000/predict/{model_id}`
 
 ---
 
 ## Example Request
-Example POST request to the `/predict` endpoint:
+Example POST request to the `/predict/{model_id}` endpoint:
 ```bash
 curl -X POST -H "Content-Type: application/json" \
 -d '{
   "features": {
-    "lag1":150,"lag2":149,"lag3":148,"lag4":147,"lag5":146,"lag6":145,
-    "lag7":144,"lag8":143,"lag9":142,"lag10":141,"lag11":140,"lag12":139,
-    "lag13":138,"lag14":137,"lag15":136,"lag16":135,"lag17":134,"lag18":133,
-    "lag19":132,"lag20":131,"lag21":130,"lag22":129,"lag23":128,"lag24":127,
-    "lag25":126,"lag26":125,"lag27":124,
-    "ap_mean":15,"ap_max":30,
-    "ap_mean_lag1":14,"ap_mean_lag2":14,"ap_mean_lag3":13,
-    "ap_max_lag1":28,"ap_max_lag2":29,"ap_max_lag3":31
+    "F10.7obs": 150,
+    "f107_lag_1": 149,
+    "f107_lag_2": 148,
+    ...
+    "SN": 120
   }
 }' \
-http://127.0.0.1:5000/predict
+http://127.0.0.1:5000/predict/linreg_flux_27_lags_ssn_horizon_7
 ```
 ## Example 2
 ```bash
@@ -111,44 +113,28 @@ curl -X POST -H "Content-Type: application/json" \
 "ap_max_lag1": 28,
 "ap_max_lag2": 29,
 "ap_max_lag3": 31
-}' http://localhost:8080/api/input/predict
+}' http://localhost:8080/api/input/predict/{model_id}
 ```
 
+---
 
+## Supported Models
 
-```bash
-Invoke-WebRequest -Uri "http://localhost:8080/api/predictions/run" -Method POST `
--Headers @{ "Content-Type" = "application/json" } `
--Body '{
-  "features": {
-    "lag1":150,"lag2":149,"lag3":148,"lag4":147,"lag5":146,"lag6":145,"lag7":144,
-    "lag8":143,"lag9":142,"lag10":141,"lag11":140,"lag12":139,"lag13":138,
-    "lag14":137,"lag15":136,"lag16":135,"lag17":134,"lag18":133,"lag19":132,
-    "lag20":131,"lag21":130,"lag22":129,"lag23":128,"lag24":127,"lag25":126,
-    "lag26":125,"lag27":124,
-    "ap_mean":15,"ap_max":30,
-    "ap_mean_lag1":14,"ap_mean_lag2":14,"ap_mean_lag3":13,
-    "ap_max_lag1":28,"ap_max_lag2":29,"ap_max_lag3":31
-  }
-}'
-```
-
-Response:
-```json
-{"prediction": 133.79525854891173}
-```
+- lgb_f107_lag27_ap_lag3_horizon_1
+- linreg_flux_27_lags_ssn_horizon_7
+- persistence_horizon_7
 
 ---
 
 ## Integration Notes
 - The Spring Boot backend calls this service at:
-  http://flask-model:5000/predict
+  http://localhost:5000/predict/{model_id}
   (inside Docker Compose, using the container name)
 ---
 
 ## Dependencies
 - Python 3.12+
-- Flask  
+- FastAPI  
 - Joblib  
 - LightGBM  
 - NumPy  
