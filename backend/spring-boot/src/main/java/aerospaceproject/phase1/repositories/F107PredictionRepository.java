@@ -1,5 +1,6 @@
-package aerospaceproject;
+package aerospaceproject.phase1.repositories;
 
+import aerospaceproject.phase1.entities.F107Prediction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDate;
 import java.util.List;

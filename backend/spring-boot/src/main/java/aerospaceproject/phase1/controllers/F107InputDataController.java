@@ -1,5 +1,10 @@
-package aerospaceproject;
+package aerospaceproject.phase1.controllers;
 
+import aerospaceproject.phase1.repositories.F107InputDataRepository;
+import aerospaceproject.phase1.services.F107InputDataService;
+import aerospaceproject.phase1.entities.F107Prediction;
+import aerospaceproject.phase1.repositories.F107PredictionRepository;
+import aerospaceproject.phase1.entities.F107InputData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -48,144 +53,13 @@ public class F107InputDataController {
         return inputService.getInput(id);
     }
 
-    // Gets the latest features from the fetch-service & sends to model-service
-    @GetMapping("/predict-latest")
-    public ResponseEntity<?> predictFromLatest() {
-        logger.info("Received request: /api/input/predict-latest");
-
-        try {
-            logger.info("Calling fetch-service at {}", fetchUrl);
-
-            // Fetch latest features
-            String modelId = "lgb_f107_lag27_ap_lag3_horizon_1";
-            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
-
-            ResponseEntity<Map> fetchResponse =
-                    restTemplate.getForEntity(fetchEndpoint, Map.class);
-
-            if (!fetchResponse.getStatusCode().is2xxSuccessful() ||
-                    fetchResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Failed to fetch latest features from fetch-service.");
-            }
-
-            Map<String, Object> fetchBody = fetchResponse.getBody();
-
-            logger.info("Successfully retrieved features from fetch-service");
-
-            Map<String, Object> features = (Map<String, Object>) fetchBody.get("features");
-            if (features == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Fetch-service returned no 'features' object.");
-            }
-            // Create and save input to DB
-            F107InputData newInput = new F107InputData();
-
-            // Manually create a list of lags from returned features
-            List<Double> lags = new ArrayList<>();
-
-            if (features.containsKey("f107_lag_1")) {
-                for (int i = 1; i <= 27; i++) {
-                    String key = "f107_lag_" + i;
-                    Object val = features.get(key);
-                    if (val != null) {
-                        lags.add(((Number) val).doubleValue());
-                    }
-                }
-                newInput.setLags(lags);
-            }
-
-
-
-
-
-
-            if (features.containsKey("ap_mean"))
-                newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
-
-            if (features.containsKey("ap_max"))
-                newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
-
-            if (features.containsKey("ap_mean_lag1"))
-                newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
-
-            if (features.containsKey("ap_mean_lag2"))
-                newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
-
-            if (features.containsKey("ap_mean_lag3"))
-                newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
-
-            if (features.containsKey("ap_max_lag1"))
-                newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
-
-            if (features.containsKey("ap_max_lag2"))
-                newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
-
-            if (features.containsKey("ap_max_lag3"))
-                newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
-
-
-            F107InputData savedInput = inputRepo.save(newInput);
-
-            String predictUrl = buildPredictUrl(modelUrl, modelId);
-
-
-            logger.info("Calling model-service at {}", predictUrl);
-
-            // Send features to model-service
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("features", features);
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-            ResponseEntity<Map> modelResponse = restTemplate.postForEntity(predictUrl, request, Map.class);
-
-            if (!modelResponse.getStatusCode().is2xxSuccessful() || modelResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Failed to get prediction from model-service.");
-            }
-
-            logger.info("Obtained prediction from model-service.");
-
-            Map<String, Object> body = modelResponse.getBody();
-            Double predictedValue = ((Number) body.get("predicted_flux")).doubleValue();
-            String returnedModelId = (String) body.get("model_id");
-
-            // Create and save prediction
-            F107Prediction prediction = new F107Prediction();
-            prediction.setInput(savedInput);
-            prediction.setDate(LocalDate.now());
-            prediction.setPredictedValue(predictedValue);
-            prediction.setModelVersion(returnedModelId != null ? returnedModelId : modelId);
-
-            F107Prediction savedPrediction = predictionRepo.save(prediction);
-
-            logger.info("F107 Prediction Obtained and Stored");
-
-            // Return result
-            Map<String, Object> result = new HashMap<>();
-            result.put("inputId", savedInput.getId());
-            result.put("predictionId", savedPrediction.getId());
-            result.put("predictedValue", predictedValue);
-            result.put("modelVersion", modelId);
-
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
-    }
-
+    // ENDPOINT USED BY FRONTEND
     @GetMapping("/predict-latest-v2")
     public ResponseEntity<?> predictFromLatestV2(
             @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3_horizon_1") String modelId
-    )
-    {
+    ) {
 
-        logger.info("Prediction requested with model={}", modelId);
+        logger.info("PredictionV2 requested with model={}", modelId);
 
         try {
             logger.info("Calling fetch-service at {}", fetchUrl);
@@ -211,7 +85,6 @@ public class F107InputDataController {
                         .body("Fetch-service returned no 'features' object.");
             }
 
-
             // Create and save input to DB
             F107InputData newInput = new F107InputData();
 
@@ -228,7 +101,6 @@ public class F107InputDataController {
                 }
                 newInput.setLags(lags);
             }
-
 
             if (features.containsKey("ap_mean"))
                 newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
@@ -316,8 +188,11 @@ public class F107InputDataController {
             base = base.substring(0, base.length() - 1);
         return String.format("%s/predict/%s", base, modelId);
     }
+}
 
-    // Sends entered input to model-service and returns the prediction/saves it to db
+
+/* ARCHIVED ENDPOINTS
+// Manually get a prediction with a test input
     @PostMapping("/predict")
     public ResponseEntity<?> predict(@RequestBody F107InputData input) {
         try {
@@ -385,3 +260,132 @@ public class F107InputDataController {
         }
     }
 }
+
+// Gets the latest features from the fetch-service & sends to model-service
+    @GetMapping("/predict-latest")
+    public ResponseEntity<?> predictFromLatest() {
+        logger.info("Received request: /api/input/predict-latest");
+
+        try {
+            logger.info("Calling fetch-service at {}", fetchUrl);
+
+            // Fetch latest features
+            String modelId = "lgb_f107_lag27_ap_lag3_horizon_1";
+            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
+
+            ResponseEntity<Map> fetchResponse =
+                    restTemplate.getForEntity(fetchEndpoint, Map.class);
+
+            if (!fetchResponse.getStatusCode().is2xxSuccessful() ||
+                    fetchResponse.getBody() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Failed to fetch latest features from fetch-service.");
+            }
+
+            Map<String, Object> fetchBody = fetchResponse.getBody();
+
+            logger.info("Successfully retrieved features from fetch-service");
+
+            Map<String, Object> features = (Map<String, Object>) fetchBody.get("features");
+            if (features == null) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Fetch-service returned no 'features' object.");
+            }
+            // Create and save input to DB
+            F107InputData newInput = new F107InputData();
+
+            // Manually create a list of lags from returned features
+            List<Double> lags = new ArrayList<>();
+
+            if (features.containsKey("f107_lag_1")) {
+                for (int i = 1; i <= 27; i++) {
+                    String key = "f107_lag_" + i;
+                    Object val = features.get(key);
+                    if (val != null) {
+                        lags.add(((Number) val).doubleValue());
+                    }
+                }
+                newInput.setLags(lags);
+            }
+
+
+            if (features.containsKey("ap_mean"))
+                newInput.setAp_mean(((Number) features.get("ap_mean")).doubleValue());
+
+            if (features.containsKey("ap_max"))
+                newInput.setAp_max(((Number) features.get("ap_max")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag1"))
+                newInput.setAp_mean_lag1(((Number) features.get("ap_mean_lag1")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag2"))
+                newInput.setAp_mean_lag2(((Number) features.get("ap_mean_lag2")).doubleValue());
+
+            if (features.containsKey("ap_mean_lag3"))
+                newInput.setAp_mean_lag3(((Number) features.get("ap_mean_lag3")).doubleValue());
+
+            if (features.containsKey("ap_max_lag1"))
+                newInput.setAp_max_lag1(((Number) features.get("ap_max_lag1")).doubleValue());
+
+            if (features.containsKey("ap_max_lag2"))
+                newInput.setAp_max_lag2(((Number) features.get("ap_max_lag2")).doubleValue());
+
+            if (features.containsKey("ap_max_lag3"))
+                newInput.setAp_max_lag3(((Number) features.get("ap_max_lag3")).doubleValue());
+
+
+            F107InputData savedInput = inputRepo.save(newInput);
+
+            String predictUrl = buildPredictUrl(modelUrl, modelId);
+
+
+            logger.info("Calling model-service at {}", predictUrl);
+
+            // Send features to model-service
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("features", features);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+            ResponseEntity<Map> modelResponse = restTemplate.postForEntity(predictUrl, request, Map.class);
+
+            if (!modelResponse.getStatusCode().is2xxSuccessful() || modelResponse.getBody() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Failed to get prediction from model-service.");
+            }
+
+            logger.info("Obtained prediction from model-service.");
+
+            Map<String, Object> body = modelResponse.getBody();
+            Double predictedValue = ((Number) body.get("predicted_flux")).doubleValue();
+            String returnedModelId = (String) body.get("model_id");
+
+            // Create and save prediction
+            F107Prediction prediction = new F107Prediction();
+            prediction.setInput(savedInput);
+            prediction.setDate(LocalDate.now());
+            prediction.setPredictedValue(predictedValue);
+            prediction.setModelVersion(returnedModelId != null ? returnedModelId : modelId);
+
+            F107Prediction savedPrediction = predictionRepo.save(prediction);
+
+            logger.info("F107 Prediction Obtained and Stored");
+
+            // Return result
+            Map<String, Object> result = new HashMap<>();
+            result.put("inputId", savedInput.getId());
+            result.put("predictionId", savedPrediction.getId());
+            result.put("predictedValue", predictedValue);
+            result.put("modelVersion", modelId);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
+ */

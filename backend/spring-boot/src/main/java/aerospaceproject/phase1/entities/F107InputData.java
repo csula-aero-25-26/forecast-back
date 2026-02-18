@@ -1,4 +1,4 @@
-package aerospaceproject;
+package aerospaceproject.phase1.entities;
 
 import jakarta.persistence.*;
 

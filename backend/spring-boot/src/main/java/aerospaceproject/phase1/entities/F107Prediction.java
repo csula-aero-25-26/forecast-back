@@ -1,7 +1,7 @@
 //TODO. Had AI help with this but just a placeholder until we understand
 // how the ML team structures the output
 
-package aerospaceproject;
+package aerospaceproject.phase1.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;

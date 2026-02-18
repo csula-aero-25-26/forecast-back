@@ -1,5 +1,7 @@
-package aerospaceproject;
+package aerospaceproject.phase1.services;
 
+import aerospaceproject.phase1.entities.F107Prediction;
+import aerospaceproject.phase1.repositories.F107PredictionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
