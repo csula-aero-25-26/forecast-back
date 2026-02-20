@@ -1,9 +1,12 @@
 package aerospaceproject.phase2.controllers;
 
 import aerospaceproject.phase2.entities.ModelRegistry;
+import aerospaceproject.phase2.entities.Predictions;
 import aerospaceproject.phase2.services.ModelRegistryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/models")
@@ -13,6 +16,11 @@ public class ModelRegistryController {
 
     public ModelRegistryController(ModelRegistryService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public List<ModelRegistry> getModels() {
+        return service.getAllModels();
     }
 
     @GetMapping("/{id}")
