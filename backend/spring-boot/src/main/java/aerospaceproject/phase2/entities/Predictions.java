@@ -3,6 +3,10 @@ package aerospaceproject.phase2.entities;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Map;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "predictions")
@@ -31,8 +35,9 @@ public class Predictions {
     @JoinColumn(name = "model_id", nullable = false)
     private ModelRegistry model;
 
-    @Column(name = "features", columnDefinition = "jsonb")
-    private String features;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> features;
 
     @Column(name = "notes")
     private String notes;
@@ -108,11 +113,11 @@ public class Predictions {
         this.model = model;
     }
 
-    public String getFeatures() {
+    public Map<String, Object> getFeatures() {
         return features;
     }
 
-    public void setFeatures(String features) {
+    public void setFeatures(Map<String, Object> features) {
         this.features = features;
     }
 

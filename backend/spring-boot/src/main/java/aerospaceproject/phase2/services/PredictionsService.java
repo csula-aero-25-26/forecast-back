@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PredictionsService {
@@ -23,7 +24,7 @@ public class PredictionsService {
                                       LocalDate targetDate,
                                       Integer horizonDays,
                                       Double predictedValue,
-                                      String featuresJson,
+                                      Map<String, Object> featuresJson,
                                       String notes) {
         Predictions prediction = new Predictions();
         prediction.setModel(model);
