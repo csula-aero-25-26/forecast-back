@@ -41,9 +41,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from models.lgb_f107_lag27_ap_lag3_horizon_1 import fetch_model_data as fetch_lgb
-from models.linreg_flux_27_lags_ssn_horizon_7 import fetch_model_data as fetch_linreg
-from models.persistence_horizon_7 import fetch_model_data as fetch_persistence
+from models.lgb_f107_lag27_ap_lag3 import fetch_model_data as fetch_lgb
+from models.linreg_flux_27_lags_ssn import fetch_model_data as fetch_linreg
+from models.persistence import fetch_model_data as fetch_persistence
 
 app = FastAPI(
     title="Fetch Service",
@@ -52,18 +52,22 @@ app = FastAPI(
 )
 
 PIPELINES = {
-    "lgb_f107_lag27_ap_lag3_horizon_1": fetch_lgb,
-    "linreg_flux_27_lags_ssn_horizon_7": fetch_linreg,
-    "persistence_horizon_7": fetch_persistence
+    "lgb_f107_lag27_ap_lag3": fetch_lgb,
+    "linreg_flux_27_lags_ssn": fetch_linreg,
+    "persistence": fetch_persistence,
 }
 
 
 @app.get("/latest/{model_id}")
 def get_latest_features(model_id: str):
-    if model_id not in PIPELINES:
+
+    base_model = model_id.split("_horizon_")[0]
+
+
+    if base_model not in PIPELINES:
         raise HTTPException(status_code=404, detail="Model pipeline not supported")
 
-    df = PIPELINES[model_id]()
+    df = PIPELINES[base_model]()
 
     if df.empty:
         raise HTTPException(status_code=404, detail="No data available")

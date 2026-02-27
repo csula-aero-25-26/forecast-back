@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 from sqlalchemy import create_engine
-from models.lgb_f107_lag27_ap_lag3_horizon_1 import fetch_model_data
+from models.lgb_f107_lag27_ap_lag3 import fetch_model_data
 from db_utils import write_features_to_db
 
 

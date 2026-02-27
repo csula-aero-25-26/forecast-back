@@ -20,19 +20,35 @@ ON CONFLICT (model_id) DO NOTHING;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
+           'linreg_flux_27_lags_ssn_horizon_1',
+           'linear_regression',
+           'Linear regression using 27 F10.7 lags + SN, predicting 1 day ahead'
+       )
+ON CONFLICT (model_id) DO NOTHING;
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
            'linreg_flux_27_lags_ssn_horizon_7',
            'linear_regression',
            'Linear regression using 27 F10.7 lags + SN, predicting 1 week ahead'
-       );
+       )
+ON CONFLICT (model_id) DO NOTHING;
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'persistence_horizon_1',
+           'baseline',
+           'Persistence baseline model, predicting 1 day ahead'
+       )
+ON CONFLICT (model_id) DO NOTHING;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'persistence_horizon_7',
            'baseline',
            'Persistence baseline model, predicting 1 week ahead'
-       );
-
-
+       )
+ON CONFLICT (model_id) DO NOTHING;
 
 -- ️Predictions --
 CREATE TABLE IF NOT EXISTS predictions (
@@ -121,7 +137,7 @@ CREATE TABLE IF NOT EXISTS model_features (
 );
 
 INSERT INTO model_features (model_id, feature_name)
-SELECT 'linreg_flux_27_lags_ssn_horizon_7', name
+SELECT 'linreg_flux_27_lags_ssn_horizon_1', name
 FROM feature_catalog
 WHERE name IN (
     'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
@@ -132,6 +148,20 @@ WHERE name IN (
     'f107_lag_26','f107_lag_27',
     'SN'
 )
+ON CONFLICT (model_id, feature_name) DO NOTHING;
+
+INSERT INTO model_features (model_id, feature_name)
+SELECT 'linreg_flux_27_lags_ssn_horizon_7', name
+FROM feature_catalog
+WHERE name IN (
+               'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
+               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
+               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
+               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
+               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
+               'f107_lag_26','f107_lag_27',
+               'SN'
+    )
 ON CONFLICT (model_id, feature_name) DO NOTHING;
 
 INSERT INTO model_features (model_id, feature_name)
@@ -147,12 +177,17 @@ WHERE name IN (
                'ap_mean','ap_max',
                'ap_mean_lag1','ap_max_lag1','ap_mean_lag2','ap_max_lag2','ap_mean_lag3','ap_max_lag3'
     )
-    ON CONFLICT (model_id, feature_name) DO NOTHING;
+ON CONFLICT (model_id, feature_name) DO NOTHING;
+
+INSERT INTO model_features (model_id, feature_name)
+VALUES
+    ('persistence_horizon_1','F10.7obs')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO model_features (model_id, feature_name)
 VALUES
     ('persistence_horizon_7','F10.7obs')
-    ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 
 
