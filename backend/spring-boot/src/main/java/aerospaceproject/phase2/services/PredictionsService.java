@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PredictionsService {
@@ -49,6 +50,10 @@ public class PredictionsService {
 
     public List<Predictions> getByModel(String modelId) {
         return predictionsRepository.findByModel_ModelId(modelId);
+    }
+
+    public Optional<Predictions> findByModelAndTargetDate(ModelRegistry model, LocalDate targetDate) {
+        return predictionsRepository.findByModelAndTargetDate(model, targetDate);
     }
 
     public Double computeAbsoluteError(Predictions prediction, GroundTruths gt) {

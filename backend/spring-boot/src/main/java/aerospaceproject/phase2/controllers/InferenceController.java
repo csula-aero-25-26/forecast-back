@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 
 // Runs the Prediction Workflow
@@ -116,23 +117,33 @@ public class InferenceController {
             // Determine horizon from modelId
             Integer horizonDays = extractHorizonFromModelId(modelId);
 
-            // Save to Predictions (Phase2) Table
-            Predictions savedPrediction = predictionsService.savePrediction(
-                    model,
-                    LocalDate.now(),                        // predictionDate
-                    LocalDate.now().plusDays(horizonDays),  // targetDate
-                    horizonDays,
-                    predictedValue,
-                    features,
-                    "Generated via Phase2 Endpoint"
-            );
+            Optional<Predictions> existing =
+                    predictionsService.findByModelAndTargetDate(model, LocalDate.now().plusDays(horizonDays));
 
-            logger.info("Phase2 prediction stored with ID={}",
-                    savedPrediction.getId());
+            Predictions prediction;
+
+            if (existing.isPresent()) {
+                logger.info("Prediction already exists for model={} and target date={}",
+                        model, LocalDate.now().plusDays(horizonDays));
+
+                prediction = existing.get();
+            } else {
+                prediction = predictionsService.savePrediction(
+                        model,
+                        LocalDate.now(),
+                        LocalDate.now().plusDays(horizonDays),
+                        horizonDays,
+                        predictedValue,
+                        features,
+                        "Generated via phase2 Endpoint"
+                );
+                logger.info("Phase2 prediction stored with ID={}",
+                        prediction.getId());
+            }
 
             // Return result
             Map<String, Object> result = new HashMap<>();
-            result.put("predictionId", savedPrediction.getId());
+            result.put("predictionId", prediction.getId());
             result.put("predictedValue", predictedValue);
             result.put("modelId", modelId);
             result.put("horizonDays", horizonDays);
