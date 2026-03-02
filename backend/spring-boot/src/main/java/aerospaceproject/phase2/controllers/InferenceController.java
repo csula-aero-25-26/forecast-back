@@ -157,6 +157,55 @@ public class InferenceController {
         }
     }
 
+    // Obtains all features from fetch-service used by a given model
+    @GetMapping("/get-features")
+    public ResponseEntity<?> getFeatures(
+            @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3_horizon_1") String modelId
+    ) {
+        logger.info("Features requested with model={}", modelId);
+
+        try {
+
+            // Validate that modelID exists in ModelRegistry
+            ModelRegistry model = modelRegistryRepository.findById(modelId)
+                    .orElseThrow(() -> new RuntimeException("Model not found: " + modelId));
+
+            // Fetch latest features
+            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
+            logger.info("Calling fetch-service at {}", fetchEndpoint);
+
+            ResponseEntity<Map> fetchResponse = restTemplate.getForEntity(fetchEndpoint, Map.class);
+
+            if (!fetchResponse.getStatusCode().is2xxSuccessful()
+                    || fetchResponse.getBody() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Failed to fetch latest features");
+            }
+
+            Map<String, Object> fetchBody = fetchResponse.getBody();
+            Map<String, Object> features =
+                    (Map<String, Object>) fetchBody.get("features");
+
+            if (features == null) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Fetch-service returned no features");
+            }
+
+            logger.info("Successfully retrieved features");
+
+            // Return result
+            Map<String, Object> result = new HashMap<>();
+            result.put("features", features);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("get-features failed", e);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
     // Helper method to build the model-service predict URL
     private String buildPredictUrl(String modelUrl, String modelId) {
         String base = modelUrl;
