@@ -147,6 +147,7 @@ public class InferenceController {
             result.put("predictedValue", predictedValue);
             result.put("modelId", modelId);
             result.put("horizonDays", horizonDays);
+            result.put("features", features);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
