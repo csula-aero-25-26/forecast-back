@@ -1,5 +1,6 @@
 package aerospaceproject.phase2.controllers;
 
+import aerospaceproject.phase2.dto.ManualOverrideRequest;
 import aerospaceproject.phase2.entities.ModelRegistry;
 import aerospaceproject.phase2.entities.Predictions;
 import aerospaceproject.phase2.repositories.ModelRegistryRepository;
@@ -9,10 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
@@ -122,6 +120,7 @@ public class InferenceController {
 
             Predictions prediction;
 
+            // Verify if the prediction exists (avoids duplicate entry errors)
             if (existing.isPresent()) {
                 logger.info("Prediction already exists for model={} and target date={}",
                         model, LocalDate.now().plusDays(horizonDays));
@@ -202,6 +201,60 @@ public class InferenceController {
         } catch (Exception e) {
             logger.error("get-features failed", e);
 
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("manual-override")
+    public ResponseEntity<?> manualOverride(
+            @RequestBody ManualOverrideRequest request)
+    {
+        try {
+            String modelId = request.getModelId();
+            Map<String, Object> features = request.getFeatures();
+
+            logger.info("Manual override requested for model={}", modelId);
+
+            // Validate model
+            ModelRegistry model = modelRegistryRepository.findById(modelId)
+                    .orElseThrow(() ->
+                            new RuntimeException("Model not found: " + modelId));
+
+            // Build model-service URL
+            String predictUrl = buildPredictUrl(modelUrl, modelId);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("features", features);
+
+            HttpEntity<Map<String, Object>> requestEntity =
+                    new HttpEntity<>(payload, headers);
+
+            ResponseEntity<Map> modelResponse =
+                    restTemplate.postForEntity(predictUrl, requestEntity, Map.class);
+
+            if (!modelResponse.getStatusCode().is2xxSuccessful()
+                || modelResponse.getBody() == null) {
+
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("Model-service failed");
+            }
+
+            Map<String, Object> body = modelResponse.getBody();
+            Double predictedValue =
+                    ((Number) body.get("predicted_flux")).doubleValue();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("modelId", modelId);
+            result.put("predictedValue", predictedValue);
+            result.put("manualOverride", true);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Manual override failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
         }
