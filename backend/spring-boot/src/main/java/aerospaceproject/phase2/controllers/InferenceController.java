@@ -247,6 +247,8 @@ public class InferenceController {
             Double predictedValue =
                     ((Number) body.get("predicted_flux")).doubleValue();
 
+            logger.info("Manual Prediction received: {}", predictedValue);
+
             Map<String, Object> result = new HashMap<>();
             result.put("modelId", modelId);
             result.put("predictedValue", predictedValue);
