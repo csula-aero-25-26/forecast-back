@@ -206,6 +206,7 @@ public class InferenceController {
         }
     }
 
+    // Generates a prediction value via custom inputs (prediction results are not stored to the DB)
     @PostMapping("manual-override")
     public ResponseEntity<?> manualOverride(
             @RequestBody ManualOverrideRequest request)
