@@ -1,5 +1,6 @@
 package aerospaceproject.phase2.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -8,9 +9,12 @@ import java.util.Map;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "predictions")
-public class Predictions {
+public class Prediction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,6 +37,7 @@ public class Predictions {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id", nullable = false)
+    @JsonIgnore
     private ModelRegistry model;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -42,13 +47,13 @@ public class Predictions {
     @Column(name = "notes")
     private String notes;
 
-    public Predictions() {}
+    public Prediction() {}
 
-    public Predictions(ModelRegistry model,
-                       LocalDate predictionDate,
-                       LocalDate targetDate,
-                       Integer horizonDays,
-                       Double predictedValue) {
+    public Prediction(ModelRegistry model,
+                      LocalDate predictionDate,
+                      LocalDate targetDate,
+                      Integer horizonDays,
+                      Double predictedValue) {
         this.model = model;
         this.predictionDate = predictionDate;
         this.targetDate = targetDate;

@@ -2,9 +2,9 @@ package aerospaceproject.phase2.controllers;
 
 import aerospaceproject.phase2.dto.ManualOverrideRequest;
 import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.entities.Predictions;
+import aerospaceproject.phase2.entities.Prediction;
 import aerospaceproject.phase2.repositories.ModelRegistryRepository;
-import aerospaceproject.phase2.services.PredictionsService;
+import aerospaceproject.phase2.services.PredictionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ import java.util.Optional;
 public class InferenceController {
 
     private final ModelRegistryRepository modelRegistryRepository;
-    private final PredictionsService predictionsService;
+    private final PredictionService predictionService;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
@@ -38,11 +38,11 @@ public class InferenceController {
     private String fetchUrl;
 
     public InferenceController(ModelRegistryRepository modelRegistryRepository,
-                               PredictionsService predictionsService,
+                               PredictionService predictionService,
                                ObjectMapper objectMapper,
                                RestTemplate restTemplate) {
         this.modelRegistryRepository = modelRegistryRepository;
-        this.predictionsService = predictionsService;
+        this.predictionService = predictionService;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
     }
@@ -115,10 +115,10 @@ public class InferenceController {
             // Determine horizon from modelId
             Integer horizonDays = extractHorizonFromModelId(modelId);
 
-            Optional<Predictions> existing =
-                    predictionsService.findByModelAndTargetDate(model, LocalDate.now().plusDays(horizonDays));
+            Optional<Prediction> existing =
+                    predictionService.findByModelAndTargetDate(model, LocalDate.now().plusDays(horizonDays));
 
-            Predictions prediction;
+            Prediction prediction;
 
             // Verify if the prediction exists (avoids duplicate entry errors)
             if (existing.isPresent()) {
@@ -127,7 +127,7 @@ public class InferenceController {
 
                 prediction = existing.get();
             } else {
-                prediction = predictionsService.savePrediction(
+                prediction = predictionService.savePrediction(
                         model,
                         LocalDate.now(),
                         LocalDate.now().plusDays(horizonDays),

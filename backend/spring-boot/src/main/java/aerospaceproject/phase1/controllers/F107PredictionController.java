@@ -19,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 
 @RestController
-@RequestMapping("/api/predictions")
+@RequestMapping("/api/predictionsv1")
 public class F107PredictionController {
 
     private final F107PredictionService service;

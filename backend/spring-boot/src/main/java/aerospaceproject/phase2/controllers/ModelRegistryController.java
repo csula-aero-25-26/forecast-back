@@ -1,7 +1,6 @@
 package aerospaceproject.phase2.controllers;
 
 import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.entities.Predictions;
 import aerospaceproject.phase2.services.ModelRegistryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

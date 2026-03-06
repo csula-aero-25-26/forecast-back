@@ -1,7 +1,7 @@
 package aerospaceproject.phase2.controllers;
 
-import aerospaceproject.phase2.entities.Predictions;
-import aerospaceproject.phase2.services.PredictionsService;
+import aerospaceproject.phase2.entities.Prediction;
+import aerospaceproject.phase2.services.PredictionService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,26 +11,26 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/predictions")
-public class PredictionsController {
+public class PredictionController {
 
-    private final PredictionsService predictionService;
+    private final PredictionService predictionService;
 
-    public PredictionsController(PredictionsService predictionService) {
+    public PredictionController(PredictionService predictionService) {
         this.predictionService = predictionService;
     }
 
     @GetMapping
-    public List<Predictions> getAllPredictions() {
+    public List<Prediction> getAllPredictions() {
         return predictionService.getAll();
     }
 
     @GetMapping("/recent")
-    public List<Predictions> getRecentPredictions() {
+    public List<Prediction> getRecentPredictions() {
         return predictionService.getRecent();
     }
 
     @GetMapping("/model/{modelId}")
-    public List<Predictions> getByModel(@PathVariable String modelId) {
+    public List<Prediction> getByModel(@PathVariable String modelId) {
         return predictionService.getByModel(modelId);
     }
 }
