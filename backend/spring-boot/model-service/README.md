@@ -11,8 +11,13 @@ model-service/
 │
 ├── app.py          # FastAPI application serving the model
 ├── models/
-├──── lgb_f107_lag27_ap_lag3_horizon_1.pkl
+├──── lgbm_flux_27_lags_horizon_1.pkl
+├──── lgbm_flux_27_lags_horizon_7.pkl
+├──── xgb_flux_27_lags_horizon_1.pkl
+├──── xgb_flux_27_lags_horizon_7.pkl
+├──── linreg_flux_27_lags_ssn_horizon_1.pkl
 ├──── linreg_flux_27_lags_ssn_horizon_7.pkl
+├──── persistence_horizon_1.pkl
 ├──── persistence_horizon_7.pkl
 ├── requirements.txt          # Python dependencies
 ├── Dockerfile                # Container build for model service
@@ -22,19 +27,22 @@ model-service/
 ---
 
 ## Features
-- Loads and serves the trained LightGBM model for inference.  
-- Exposes a `/predict/{model_id}` POST endpoint that accepts JSON input and returns a predicted F10.7 value.  
-- Integrated with **Docker Compose** for containerized deployment.  
-- Communicates with the **Spring Boot backend** via HTTP (JSON).  
-
+- Dynamically loads serialized model artifacts (`{model_id}.pkl`)
+- Supports LightGBM, XGBoost, Linear Regression, and Persistence models
+- Feature ordering is stored inside each model artifact (no DB dependency)
+- Exposes `/predict/{model_id}` POST endpoint for inference
+- Fully stateless service (no database writes)
+- Containerized with Docker
 ---
 
 ## How It Works
+
 1. A request is made to `/predict/{model_id}`.
-2. The service loads `{model_id}.pkl` dynamically.
-3. The required feature list is retrieved from PostgreSQL (`model_features` table).
-4. Input features are validated.
-5. The model performs inference and returns predicted flux.
+2. The service loads the corresponding `{model_id}.pkl` file.
+3. The model artifact provides its own ordered feature list.
+4. Input features are validated against the artifact’s feature schema.
+5. The model performs inference.
+6. The predicted F10.7 value is returned as JSON.
 
 ---
 
@@ -120,24 +128,39 @@ curl -X POST -H "Content-Type: application/json" \
 
 ## Supported Models
 
-- lgb_f107_lag27_ap_lag3_horizon_1
+- lgbm_flux_27_lags_horizon_1
+- lgbm_flux_27_lags_horizon_7
+- xgb_flux_27_lags_horizon_1
+- xgb_flux_27_lags_horizon_7
+- linreg_flux_27_lags_ssn_horizon_1
 - linreg_flux_27_lags_ssn_horizon_7
+- persistence_horizon_1
 - persistence_horizon_7
 
 ---
 
 ## Integration Notes
-- The Spring Boot backend calls this service at:
-  http://localhost:5000/predict/{model_id}
-  (inside Docker Compose, using the container name)
+
+- The Spring Boot backend calls this service via:
+  `http://model-service:5000/predict/{model_id}` (Docker network)
+- The backend is responsible for:
+    - Feature caching
+    - Prediction persistence
+    - Database interactions
+- The model-service performs inference only.
+
 ---
 
 ## Dependencies
+
 - Python 3.12+
-- FastAPI  
-- Joblib  
-- LightGBM  
-- NumPy  
+- FastAPI
+- Uvicorn
+- NumPy
+- Joblib
+- LightGBM
+- XGBoost
+- scikit-learn
 
 ---
 

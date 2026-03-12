@@ -1,10 +1,19 @@
 # Fetch Service (FastAPI + Data Preprocessing)
 
 ## Overview
-The **Fetch Service** is a Python FastAPI microservice responsible for **retrieving and processing raw solar and geomagnetic data**.  
-It builds model-ready feature datasets and provides the most recent feature row to the **Model Service** for prediction.  
-This service supports multiple model-specific feature generation scripts (e.g., `lgb_f107_lag27_ap_lag3_horizon_1.py`), allowing different forecasting models to be added or updated without changing the service’s structure.
 
+The **Fetch Service** is a Python FastAPI microservice responsible for
+retrieving and preprocessing raw solar data from GFZ.
+
+It builds a **canonical, model-agnostic feature set** consisting of:
+
+- F10.7 observed flux
+- Sunspot number (SN)
+- 27 lagged F10.7 values
+
+The service exposes the most recent feature vector via `/latest`.
+It does not write to the database. Feature caching and persistence
+are handled by the Spring Boot backend.
 ---
 
 ## Architecture
@@ -14,9 +23,9 @@ Spring Boot Backend
        │
        ▼
 Fetch Service (FastAPI)
- ├── Downloads → Raw Dataset (e.g. Kp_ap_Ap_SN_F107_since_1932.txt)
- ├── Generates → Feature sets via model-specific .py scripts
- └── (Optional) Writes → features_daily table in PostgreSQL
+ ├── Downloads → GFZ dataset
+ ├── Builds → Canonical feature superset
+ └── Returns → Latest feature vector (JSON)
        │
        ▼
 Returns latest processed feature vector (JSON)
@@ -25,27 +34,24 @@ Returns latest processed feature vector (JSON)
 ---
 
 ## Tech Stack
+
 | Component | Version / Tool |
 |------------|----------------|
 | Python | 3.12 |
 | Framework | FastAPI |
-| Libraries | Pandas, Requests, SQLAlchemy |
-| Database | PostgreSQL |
+| Libraries | Pandas, Requests |
 | Container | Docker + Uvicorn |
-
 ---
 
 ## Key Files
 
+
 | File | Description |
 |------|--------------|
 | `app.py` | FastAPI application entrypoint |
-| `models/lgb_f107_lag27_ap_lag3.py` | Example feature generation script for a specific model |
-| `models/<future_model>.py` | Placeholder for future model-specific feature builders |
-| `ingest_runner.py` | Executes full dataset ingestion and writes to `features_daily` |
-| `db_utils.py` | Utility for writing DataFrames to PostgreSQL via SQLAlchemy |
 | `requirements.txt` | Python dependencies |
-| `Dockerfile` | Container definition for fetch-service |
+| `Dockerfile` | Container definition |
+| `README.md` | Documentation |
 
 ---
 
@@ -57,18 +63,19 @@ Health check.
 {"status": "ok", "service": "fetch-service"}
 ```
 
-### `GET /latest/{model_id}`
+### `GET /latest`
 
-Returns the **most recent** feature row for the specified model.
+Returns the most recent canonical feature row.
 ```json
 {
-  "model_id": "lgb_f107_lag27_ap_lag3_horizon_1",
+  "date": "2026-03-12",
   "features": {
-    "f107_lag_1": 145.2,
-    "f107_lag_2": 143.8,
-    "...": "...",
-    "ap_mean_lag3": 5.25,
-    "ap_max_lag3": 15.0
+    "F10.7obs": 122.8,
+    "SN": 110,
+    "f107_lag_1": 126.9,
+    "f107_lag_2": 128.4,
+    ...
+    "f107_lag_27": 129.0
   }
 }
 ```
@@ -77,26 +84,13 @@ Returns the **most recent** feature row for the specified model.
 
 # How It Works
 
-1. **Model-specific feature generation**  
-   Each model has a corresponding Python file in `/models` (e.g., `lgb_f107_lag27_ap_lag3_horizon_1.py`) that defines how its features are constructed from external input dataset.  
-   Additional models can be added by following the same pattern; the service dynamically imports and executes the correct script.
+1. The service downloads the latest GFZ dataset.
+2. It extracts F10.7 observed flux and sunspot number (SN).
+3. It generates 27 lagged F10.7 features.
+4. It returns the most recent row as JSON.
 
-2. **`/latest/{model_id}` Endpoint**  
-   When called, the endpoint:
-    - Downloads the latest input data file.
-    - Cleans and formats it into a Pandas DataFrame.
-    - Builds features as defined by the active model script.
-    - Returns only the most recent row as JSON.
-
-3. **Batch Mode (`ingest_runner.py`)**  
-   When run manually, this script:
-    - Generates the full feature dataset.
-    - Writes it to the `features_daily` table in PostgreSQL using SQLAlchemy.
-
-4. **Database Alignment**  
-   Feature names are designed to align with:
-    - `feature_catalog`
-    - `model_features` for each model entry in the database.
+The feature set is model-agnostic.
+Individual models select the subset of features they require.
 
 ---
 
@@ -140,23 +134,26 @@ INFO:     Uvicorn running on http://0.0.0.0:5500
 ---
 
 ## Integration Notes
-- The **Spring Boot backend** calls this service at:
-  ```
-  http://fetch-service:5500/latest/{model_id}
-  ```
-- The **Model Service** consumes this JSON response and uses it for prediction:
-  ```
-  http://model-service:5000/predict/{model_id}
-  ```
-- Both microservices communicate internally using Docker’s `app-net` bridge.
+
+- The Spring Boot backend calls:
+  http://fetch-service:5500/latest
+
+- The backend is responsible for:
+    - Feature caching (features_daily table)
+    - Prediction persistence
+    - Database interactions
+
+- The Fetch Service is stateless and does not write to PostgreSQL.
 
 ---
 
 ## Example Workflow
-1. `fetch-service` downloads and preprocesses the raw GFZ data.
-2. It exposes the most recent feature vector through `/latest`.
-3. `model-service` retrieves those features and performs inference.
-4. The **Spring Boot backend** coordinates the call chain and returns results to the client.
+
+1. Backend calls `/latest` to retrieve canonical features.
+2. Backend checks if features for the date are cached.
+3. If not cached, backend stores them in `features_daily`.
+4. Backend sends features to the model-service.
+5. Model-service performs inference and returns predicted flux.
 
 ---
 
