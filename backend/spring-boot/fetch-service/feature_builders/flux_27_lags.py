@@ -30,9 +30,8 @@ def fetch_model_data(n_lags=27) -> pd.DataFrame:
         engine="python"
     )
 
-    df["date"] = pd.to_datetime(df[["year","month","day"]])
 
-    df = df[["date", "F10.7obs"]].dropna()
+    df = df[["F10.7obs"]].dropna()
 
     # Create lag features
     for lag in range(1, n_lags + 1):
@@ -42,8 +41,8 @@ def fetch_model_data(n_lags=27) -> pd.DataFrame:
 
     feature_cols = ["F10.7obs"] + [f"f107_lag_{i}" for i in range(1, n_lags + 1)]
 
-    # Return date + features (consistent contract)
-    df = df[["date"] + feature_cols]
+    # Return features
+    df = df[feature_cols]
 
     print(f"Final dataset with {len(df)} rows and {len(df.columns)} columns.")
     return df

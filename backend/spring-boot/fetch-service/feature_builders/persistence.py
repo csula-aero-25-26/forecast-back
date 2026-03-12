@@ -26,10 +26,8 @@ def fetch_model_data() -> pd.DataFrame:
         engine="python"
     )
 
-    df["date"] = pd.to_datetime(df[["year","month","day"]])
-
     # Only what persistence needs
-    df = df[["date", "F10.7obs"]].dropna().reset_index(drop=True)
+    df = df[["F10.7obs"]].dropna().reset_index(drop=True)
 
     print(f"Loaded {len(df)} rows.")
     print(df.tail())

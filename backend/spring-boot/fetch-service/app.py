@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
+from datetime import datetime
 
 from feature_builders.persistence import fetch_model_data as fetch_persistence
 from feature_builders.flux_27_lags import fetch_model_data as fetch_flux_27_lags
@@ -26,7 +27,6 @@ def get_latest_features(model_id: str):
 
     base_model = model_id.split("_horizon_")[0]
 
-
     if base_model not in PIPELINES:
         raise HTTPException(status_code=404, detail="Model pipeline not supported")
 
@@ -37,17 +37,11 @@ def get_latest_features(model_id: str):
 
     latest = df.iloc[-1].to_dict()
 
-    # Remove non-feature fields
-    latest.pop("target_flux", None)
-
-
-    # Convert any pandas Timestamp to ISO string
-    for k, v in latest.items():
-        if isinstance(v, pd.Timestamp):
-            latest[k] = v.date().isoformat()
+    current_date = datetime.now().strftime("%Y-%m-%d")
 
     return JSONResponse(content={
         "model_id": model_id,
+        "date": current_date,
         "features": latest
     })
 

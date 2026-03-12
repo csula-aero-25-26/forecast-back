@@ -26,10 +26,10 @@ def fetch_model_data(n_lags=27) -> pd.DataFrame:
         engine="python"
     )
 
-    df["date"] = pd.to_datetime(df[["year","month","day"]])
+
 
     # Keep only what LinReg was trained on
-    df = df[["date", "F10.7obs", "SN"]].dropna()
+    df = df[["F10.7obs", "SN"]].dropna()
 
     # Create lag features for F10.7obs
     for lag in range(1, n_lags + 1):
