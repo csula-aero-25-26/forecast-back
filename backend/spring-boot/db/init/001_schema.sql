@@ -169,53 +169,7 @@ VALUES
     ('SN', 'SILSO', 'current', 'Daily international sunspot number')
 ON CONFLICT (name) DO NOTHING;
 
-
--- Model Features (Links Features to Models, Lookup) --
-CREATE TABLE IF NOT EXISTS model_features (
-    model_id TEXT REFERENCES model_registry(model_id),
-    feature_name TEXT REFERENCES feature_catalog(name),
-    PRIMARY KEY (model_id, feature_name)
-);
-
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'linreg_flux_27_lags_ssn_horizon_1', name
-FROM feature_catalog
-WHERE name IN (
-    'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-    'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-    'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-    'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-    'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-    'f107_lag_26','f107_lag_27',
-    'SN'
-)
-ON CONFLICT (model_id, feature_name) DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'linreg_flux_27_lags_ssn_horizon_7', name
-FROM feature_catalog
-WHERE name IN (
-               'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-               'f107_lag_26','f107_lag_27',
-               'SN'
-    )
-ON CONFLICT (model_id, feature_name) DO NOTHING;
-
-
-INSERT INTO model_features (model_id, feature_name)
-VALUES
-    ('persistence_horizon_1','F10.7obs')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-VALUES
-    ('persistence_horizon_7','F10.7obs')
-ON CONFLICT DO NOTHING;
-
+DROP TABLE IF EXISTS model_features CASCADE;
 
 
 -- Features Daily (Actual Features Used by Model) --

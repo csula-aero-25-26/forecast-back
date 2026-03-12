@@ -22,7 +22,7 @@ DB_CONFIG = {
 app = FastAPI(
     title="Model Service API",
     description="Handles dynamic model inference and registry access.",
-    version="2.2"
+    version="2.0"
 )
 
 # --------------------------------------------------
@@ -34,33 +34,6 @@ class FeaturePayload(BaseModel):
 # --------------------------------------------------
 # Database utilities
 # --------------------------------------------------
-def get_feature_list(model_id: str, retries=5, delay=5):
-    for attempt in range(1, retries + 1):
-        try:
-            conn = psycopg2.connect(**DB_CONFIG)
-            cur = conn.cursor()
-            cur.execute("""
-                        SELECT feature_name
-                        FROM model_features
-                        WHERE model_id = %s
-                        ORDER BY feature_name;
-                        """, (model_id,))
-            features = [r[0] for r in cur.fetchall()]
-            cur.close()
-            conn.close()
-
-            if not features:
-                raise RuntimeError(f"No features found for model_id {model_id}")
-
-            return features
-
-        except Exception as e:
-            print(f"DB connection attempt {attempt} failed: {e}")
-            if attempt == retries:
-                raise HTTPException(status_code=500, detail="Database connection failed")
-            time.sleep(delay)
-
-
 def load_model_and_features(model_id: str):
     model_path = f"models/{model_id}.pkl"
 
@@ -69,27 +42,27 @@ def load_model_and_features(model_id: str):
     except Exception:
         raise HTTPException(status_code=404, detail="Model file not found")
 
-    features = get_feature_list(model_id)
-
-    # Case 1: Raw model (LGBM)
-    if hasattr(bundle, "predict"):
-        return bundle, features
-
-    # Case 2: Bundled model dict (linreg)
-    if isinstance(bundle, dict) and "model" in bundle:
-        return bundle["model"], features
-
-    # Case 3: Persistence
+    # Persistence model
     if isinstance(bundle, dict) and bundle.get("model_type") == "persistence":
+        feature_order = bundle["features"]
 
         def persistence_predict(X):
-            # X is 2D array, first feature is F10.7obs
             return np.array([X[0][0]])
 
-        return persistence_predict, features
+        return persistence_predict, feature_order
+
+    # Bundled model (linreg, lgbm, xgb)
+    if isinstance(bundle, dict) and "model" in bundle:
+        return bundle["model"], bundle["features"]
+
+    # Raw model (fallback)
+    if hasattr(bundle, "predict"):
+        raise HTTPException(
+            status_code=500,
+            detail="Model artifact missing feature metadata"
+        )
 
     raise HTTPException(status_code=500, detail="Unknown model format")
-
 # --------------------------------------------------
 # Endpoints
 # --------------------------------------------------

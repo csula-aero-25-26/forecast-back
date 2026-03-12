@@ -10,7 +10,7 @@ from feature_builders.flux_27_lags_ssn import fetch_model_data as fetch_flux_27_
 app = FastAPI(
     title="Fetch Service API",
     description="Builds model-specific feature sets from GFZ data.",
-    version="1.1.0"
+    version="2.0"
 )
 
 PIPELINES = {
