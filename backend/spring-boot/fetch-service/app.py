@@ -2,20 +2,22 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
 
-from models.lgb_f107_lag27_ap_lag3 import fetch_model_data as fetch_lgb
-from models.linreg_flux_27_lags_ssn import fetch_model_data as fetch_linreg
-from models.persistence import fetch_model_data as fetch_persistence
+from feature_builders.persistence import fetch_model_data as fetch_persistence
+from feature_builders.flux_27_lags import fetch_model_data as fetch_flux_27_lags
+from feature_builders.flux_27_lags_ssn import fetch_model_data as fetch_flux_27_lags_ssn
+
 
 app = FastAPI(
-    title="Fetch Service",
+    title="Fetch Service API",
     description="Builds model-specific feature sets from GFZ data.",
-    version="1.0.1"
+    version="1.1.0"
 )
 
 PIPELINES = {
-    "lgb_f107_lag27_ap_lag3": fetch_lgb,
-    "linreg_flux_27_lags_ssn": fetch_linreg,
     "persistence": fetch_persistence,
+    "linreg_flux_27_lags_ssn": fetch_flux_27_lags_ssn,
+    "lgbm_flux_27_lags": fetch_flux_27_lags,
+    "xgb_flux_27_lags": fetch_flux_27_lags
 }
 
 
