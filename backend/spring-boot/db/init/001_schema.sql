@@ -1,5 +1,5 @@
 -- ==========================================
--- CSULA Aerospace Senior Design – First DB Implement
+-- CSULA Aerospace Senior Design – DB Initialization
 -- Core tables for model tracking and forecasts
 -- ==========================================
 
@@ -10,45 +10,86 @@ CREATE TABLE IF NOT EXISTS model_registry (
     description  TEXT,                          -- short notes (optional)
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Remove deprecated model
+DELETE FROM model_registry
+WHERE model_id = 'lgb_f107_lag27_ap_lag3_horizon_1';
 
-INSERT INTO model_registry (model_id, family, description)
-VALUES (
-    'lgb_f107_lag27_ap_lag3_horizon_1', 'lightgbm',
-    'LightGBM model using 27-day lagged F10.7 and 3-day lagged ap indices, predicting 1 day ahead'
-)
-ON CONFLICT (model_id) DO NOTHING;
-
+-- <Model Family> | Features: <schema> | Horizon: <X days> | Validation: <method>
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_1',
            'linear_regression',
-           'Linear regression using 27 F10.7 lags + SN, predicting 1 day ahead'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 1 day | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_7',
            'linear_regression',
-           'Linear regression using 27 F10.7 lags + SN, predicting 1 week ahead'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 7 days | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'persistence_horizon_1',
            'baseline',
-           'Persistence baseline model, predicting 1 day ahead'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 1 day | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'persistence_horizon_7',
            'baseline',
-           'Persistence baseline model, predicting 1 week ahead'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 7 days | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'lgbm_flux_27_lags_horizon_1',
+           'lightgbm',
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'lgbm_flux_27_lags_horizon_7',
+           'lightgbm',
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'xgb_flux_27_lags_horizon_1',
+           'xgboost',
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'xgb_flux_27_lags_horizon_7',
+           'xgboost',
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 -- ️Predictions --
 CREATE TABLE IF NOT EXISTS predictions (
@@ -164,20 +205,6 @@ WHERE name IN (
     )
 ON CONFLICT (model_id, feature_name) DO NOTHING;
 
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'lgb_f107_lag27_ap_lag3_horizon_1', name
-FROM feature_catalog
-WHERE name IN (
-               'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-               'f107_lag_26','f107_lag_27',
-               'ap_mean','ap_max',
-               'ap_mean_lag1','ap_max_lag1','ap_mean_lag2','ap_max_lag2','ap_mean_lag3','ap_max_lag3'
-    )
-ON CONFLICT (model_id, feature_name) DO NOTHING;
 
 INSERT INTO model_features (model_id, feature_name)
 VALUES
