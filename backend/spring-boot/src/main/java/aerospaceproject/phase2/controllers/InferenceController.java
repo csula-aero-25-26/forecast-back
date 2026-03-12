@@ -1,10 +1,12 @@
 package aerospaceproject.phase2.controllers;
 
 import aerospaceproject.phase2.dto.ManualOverrideRequest;
+import aerospaceproject.phase2.entities.FeaturesDaily;
 import aerospaceproject.phase2.entities.ModelRegistry;
 import aerospaceproject.phase2.entities.Prediction;
 import aerospaceproject.phase2.repositories.ModelRegistryRepository;
 import aerospaceproject.phase2.services.PredictionService;
+import aerospaceproject.phase2.services.FeaturesDailyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ public class InferenceController {
 
     private final ModelRegistryRepository modelRegistryRepository;
     private final PredictionService predictionService;
+    private final FeaturesDailyService featuresDailyService;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
@@ -39,50 +42,74 @@ public class InferenceController {
 
     public InferenceController(ModelRegistryRepository modelRegistryRepository,
                                PredictionService predictionService,
+                               FeaturesDailyService featuresDailyService,
                                ObjectMapper objectMapper,
                                RestTemplate restTemplate) {
         this.modelRegistryRepository = modelRegistryRepository;
         this.predictionService = predictionService;
+        this.featuresDailyService = featuresDailyService;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
     }
 
+    private Map<String, Object> fetchAndCacheFeatures() {
+
+        LocalDate today = LocalDate.now();
+
+        // 1. Check DB first
+        Optional<FeaturesDaily> existing =
+                featuresDailyService.findByDate(today);
+
+        if (existing.isPresent()) {
+            logger.info("Using cached features for date={}", today);
+            return featuresDailyService.toFeatureMap(existing.get());
+        }
+
+        // 2. Not cached → call fetch-service
+        String fetchEndpoint = String.format("%s/latest", fetchUrl);
+        logger.info("Calling fetch-service at {}", fetchEndpoint);
+
+        ResponseEntity<Map> fetchResponse =
+                restTemplate.getForEntity(fetchEndpoint, Map.class);
+
+        if (!fetchResponse.getStatusCode().is2xxSuccessful()
+                || fetchResponse.getBody() == null) {
+            throw new RuntimeException("Failed to fetch latest features");
+        }
+
+        Map<String, Object> fetchBody = fetchResponse.getBody();
+        Map<String, Object> features =
+                (Map<String, Object>) fetchBody.get("features");
+
+        if (features == null) {
+            throw new RuntimeException("Fetch-service returned no features");
+        }
+
+        // 3. Save to DB
+        featuresDailyService.save(today, features);
+        logger.info("Cached features for date={}", today);
+
+        return features;
+    }
+
+
     // Refactored Version of predictFromLatestV2 (uses new phase2 classes)
     @GetMapping("/predict-latest-v2-phase2")
     public ResponseEntity<?> predictFromLatestV2Phase2(
-            @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3_horizon_1") String modelId
+            @RequestParam(defaultValue = "lgbm_flux_27_lags_horizon_1") String modelId
     ) {
 
         logger.info("Phase2 Prediction requested with model={}", modelId);
 
         try {
 
-            // Validate that modelID exists in ModelRegistry
+            // Validate model exists
             ModelRegistry model = modelRegistryRepository.findById(modelId)
                     .orElseThrow(() -> new RuntimeException("Model not found: " + modelId));
 
-            // Fetch latest features
-            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
-            logger.info("Calling fetch-service at {}", fetchEndpoint);
-
-            ResponseEntity<Map> fetchResponse = restTemplate.getForEntity(fetchEndpoint, Map.class);
-
-            if (!fetchResponse.getStatusCode().is2xxSuccessful()
-             || fetchResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Failed to fetch latest features");
-            }
-
-            Map<String, Object> fetchBody = fetchResponse.getBody();
-            Map<String, Object> features =
-                    (Map<String, Object>) fetchBody.get("features");
-
-            if (features == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Fetch-service returned no features");
-            }
-
-            logger.info("Successfully retrieved features");
+            // Fetch + Cache features
+            Map<String, Object> features = fetchAndCacheFeatures();
+            logger.info("Successfully retrieved (and cached if needed) features");
 
             // Call Model Service
             String predictUrl = buildPredictUrl(modelUrl, modelId);
@@ -101,7 +128,8 @@ public class InferenceController {
                     restTemplate.postForEntity(predictUrl, request, Map.class);
 
             if (!modelResponse.getStatusCode().is2xxSuccessful()
-                || modelResponse.getBody() == null) {
+                    || modelResponse.getBody() == null) {
+
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                         .body("Model-service failed");
             }
@@ -112,25 +140,25 @@ public class InferenceController {
 
             logger.info("Prediction received: {}", predictedValue);
 
-            // Determine horizon from modelId
+            // Determine horizon
             Integer horizonDays = extractHorizonFromModelId(modelId);
+            LocalDate today = LocalDate.now();
+            LocalDate targetDate = today.plusDays(horizonDays);
 
             Optional<Prediction> existing =
-                    predictionService.findByModelAndTargetDate(model, LocalDate.now().plusDays(horizonDays));
+                    predictionService.findByModelAndTargetDate(model, targetDate);
 
             Prediction prediction;
 
-            // Verify if the prediction exists (avoids duplicate entry errors)
             if (existing.isPresent()) {
                 logger.info("Prediction already exists for model={} and target date={}",
-                        model, LocalDate.now().plusDays(horizonDays));
-
+                        modelId, targetDate);
                 prediction = existing.get();
             } else {
                 prediction = predictionService.savePrediction(
                         model,
-                        LocalDate.now(),
-                        LocalDate.now().plusDays(horizonDays),
+                        today,
+                        targetDate,
                         horizonDays,
                         predictedValue,
                         features,
@@ -140,7 +168,6 @@ public class InferenceController {
                         prediction.getId());
             }
 
-            // Return result
             Map<String, Object> result = new HashMap<>();
             result.put("predictionId", prediction.getId());
             result.put("predictedValue", predictedValue);
@@ -149,6 +176,7 @@ public class InferenceController {
             result.put("features", features);
 
             return ResponseEntity.ok(result);
+
         } catch (Exception e) {
             logger.error("Phase2 predict failed", e);
 
@@ -159,45 +187,20 @@ public class InferenceController {
 
     // Obtains all features from fetch-service used by a given model
     @GetMapping("/get-features")
-    public ResponseEntity<?> getFeatures(
-            @RequestParam(defaultValue = "lgb_f107_lag27_ap_lag3_horizon_1") String modelId
-    ) {
-        logger.info("Features requested with model={}", modelId);
+    public ResponseEntity<?> getFeatures() {
+
+        logger.info("Features requested");
 
         try {
 
-            // Validate that modelID exists in ModelRegistry
-            ModelRegistry model = modelRegistryRepository.findById(modelId)
-                    .orElseThrow(() -> new RuntimeException("Model not found: " + modelId));
+            Map<String, Object> features = fetchAndCacheFeatures();
+            logger.info("Successfully retrieved (and cached if needed) features");
 
-            // Fetch latest features
-            String fetchEndpoint = String.format("%s/latest/%s", fetchUrl, modelId);
-            logger.info("Calling fetch-service at {}", fetchEndpoint);
-
-            ResponseEntity<Map> fetchResponse = restTemplate.getForEntity(fetchEndpoint, Map.class);
-
-            if (!fetchResponse.getStatusCode().is2xxSuccessful()
-                    || fetchResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Failed to fetch latest features");
-            }
-
-            Map<String, Object> fetchBody = fetchResponse.getBody();
-            Map<String, Object> features =
-                    (Map<String, Object>) fetchBody.get("features");
-
-            if (features == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                        .body("Fetch-service returned no features");
-            }
-
-            logger.info("Successfully retrieved features");
-
-            // Return result
             Map<String, Object> result = new HashMap<>();
             result.put("features", features);
 
             return ResponseEntity.ok(result);
+
         } catch (Exception e) {
             logger.error("get-features failed", e);
 

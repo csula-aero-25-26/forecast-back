@@ -1,50 +1,65 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
+import requests
+from io import StringIO
 from datetime import datetime
-
-from feature_builders.persistence import fetch_model_data as fetch_persistence
-from feature_builders.flux_27_lags import fetch_model_data as fetch_flux_27_lags
-from feature_builders.flux_27_lags_ssn import fetch_model_data as fetch_flux_27_lags_ssn
-
 
 app = FastAPI(
     title="Fetch Service API",
-    description="Builds model-specific feature sets from GFZ data.",
+    description="Builds canonical feature set from GFZ data.",
     version="2.0"
 )
 
-PIPELINES = {
-    "persistence": fetch_persistence,
-    "linreg_flux_27_lags_ssn": fetch_flux_27_lags_ssn,
-    "lgbm_flux_27_lags": fetch_flux_27_lags,
-    "xgb_flux_27_lags": fetch_flux_27_lags
-}
+GFZ_URL = "https://kp.gfz.de/app/files/Kp_ap_Ap_SN_F107_since_1932.txt"
 
 
-@app.get("/latest/{model_id}")
-def get_latest_features(model_id: str):
+def fetch_model_data(n_lags=27) -> pd.DataFrame:
+    print("Downloading GFZ data...")
+    r = requests.get(GFZ_URL, timeout=30)
+    r.raise_for_status()
 
-    base_model = model_id.split("_horizon_")[0]
+    cols = [
+        "year","month","day","days","days_m","Bsr","dB",
+        "Kp1","Kp2","Kp3","Kp4","Kp5","Kp6","Kp7","Kp8",
+        "ap1","ap2","ap3","ap4","ap5","ap6","ap7","ap8",
+        "Ap","SN","F10.7obs","F10.7adj","D"
+    ]
 
-    if base_model not in PIPELINES:
-        raise HTTPException(status_code=404, detail="Model pipeline not supported")
+    df = pd.read_csv(
+        StringIO(r.text),
+        sep=r"\s+",
+        comment="#",
+        names=cols,
+        engine="python"
+    )
 
-    df = PIPELINES[base_model]()
+    # Always include SN
+    df = df[["F10.7obs", "SN"]].dropna()
+
+    for lag in range(1, n_lags + 1):
+        df[f"f107_lag_{lag}"] = df["F10.7obs"].shift(lag)
+
+    df = df.dropna().reset_index(drop=True)
+
+    return df
+
+
+@app.get("/latest")
+def get_latest_features():
+
+    df = fetch_model_data()
 
     if df.empty:
         raise HTTPException(status_code=404, detail="No data available")
 
     latest = df.iloc[-1].to_dict()
-
-    current_date = datetime.now().strftime("%Y-%m-%d")
+    current_date = datetime.utcnow().strftime("%Y-%m-%d")
 
     return JSONResponse(content={
-        "model_id": model_id,
         "date": current_date,
         "features": latest
     })
-
 
 @app.get("/")
 def root():
