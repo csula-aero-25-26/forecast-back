@@ -1,54 +1,65 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
-
-from models.lgb_f107_lag27_ap_lag3 import fetch_model_data as fetch_lgb
-from models.linreg_flux_27_lags_ssn import fetch_model_data as fetch_linreg
-from models.persistence import fetch_model_data as fetch_persistence
+import requests
+from io import StringIO
+from datetime import datetime
 
 app = FastAPI(
-    title="Fetch Service",
-    description="Builds model-specific feature sets from GFZ data.",
-    version="1.0.1"
+    title="Fetch Service API",
+    description="Builds canonical feature set from GFZ data.",
+    version="2.0"
 )
 
-PIPELINES = {
-    "lgb_f107_lag27_ap_lag3": fetch_lgb,
-    "linreg_flux_27_lags_ssn": fetch_linreg,
-    "persistence": fetch_persistence,
-}
+GFZ_URL = "https://kp.gfz.de/app/files/Kp_ap_Ap_SN_F107_since_1932.txt"
 
 
-@app.get("/latest/{model_id}")
-def get_latest_features(model_id: str):
+def fetch_model_data(n_lags=27) -> pd.DataFrame:
+    print("Downloading GFZ data...")
+    r = requests.get(GFZ_URL, timeout=30)
+    r.raise_for_status()
 
-    base_model = model_id.split("_horizon_")[0]
+    cols = [
+        "year","month","day","days","days_m","Bsr","dB",
+        "Kp1","Kp2","Kp3","Kp4","Kp5","Kp6","Kp7","Kp8",
+        "ap1","ap2","ap3","ap4","ap5","ap6","ap7","ap8",
+        "Ap","SN","F10.7obs","F10.7adj","D"
+    ]
+
+    df = pd.read_csv(
+        StringIO(r.text),
+        sep=r"\s+",
+        comment="#",
+        names=cols,
+        engine="python"
+    )
+
+    # Always include SN
+    df = df[["F10.7obs", "SN"]].dropna()
+
+    for lag in range(1, n_lags + 1):
+        df[f"f107_lag_{lag}"] = df["F10.7obs"].shift(lag)
+
+    df = df.dropna().reset_index(drop=True)
+
+    return df
 
 
-    if base_model not in PIPELINES:
-        raise HTTPException(status_code=404, detail="Model pipeline not supported")
+@app.get("/latest")
+def get_latest_features():
 
-    df = PIPELINES[base_model]()
+    df = fetch_model_data()
 
     if df.empty:
         raise HTTPException(status_code=404, detail="No data available")
 
     latest = df.iloc[-1].to_dict()
-
-    # Remove non-feature fields
-    latest.pop("target_flux", None)
-
-
-    # Convert any pandas Timestamp to ISO string
-    for k, v in latest.items():
-        if isinstance(v, pd.Timestamp):
-            latest[k] = v.date().isoformat()
+    current_date = datetime.utcnow().strftime("%Y-%m-%d")
 
     return JSONResponse(content={
-        "model_id": model_id,
+        "date": current_date,
         "features": latest
     })
-
 
 @app.get("/")
 def root():

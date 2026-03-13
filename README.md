@@ -13,9 +13,10 @@ It is composed of multiple microservices connected through a **Spring Boot backe
 Client / Frontend
         │
         ▼
-Spring Boot Backend  (Java 21)
+Spring Boot Backend (Java 21)
  ├── Calls → Fetch Service  (/latest)
- └── Calls → Model Service  (/predict/{model}/{horizon})
+ ├── Caches → features_daily (PostgreSQL)
+ └── Calls → Model Service  (/predict/{model_id})
         │
         ▼
 PostgreSQL Database  (model registry, features, predictions)
@@ -23,14 +24,14 @@ PostgreSQL Database  (model registry, features, predictions)
 
 ---
 
-## ⚙️ Core Services
+## Core Services
 
-| Service                 | Tech Stack            | Port                           | Role                                                   |
-| ----------------------- | --------------------- | ------------------------------ | ------------------------------------------------------ |
-| **Spring Boot Backend** | Java 21 / Maven       | 8080                           | Main orchestrator between frontend and microservices   |
-| **Model Service**       | Python 3.12 / FastAPI | 5000                           | Loads LightGBM model and returns predictions           |
-| **Fetch Service**       | Python 3.12 / FastAPI | 5500                           | Downloads, processes, and prepares solar data features |
-| **PostgreSQL**          | 15+                   | 5332 (host) / 5432 (container) | Stores models, metadata, and predictions               |
+| Service                 | Tech Stack            | Port                           | Role                                                    |
+| ----------------------- | --------------------- | ------------------------------ | ------------------------------------------------------- |
+| **Spring Boot Backend** | Java 21 / Maven       | 8080                           | Orchestrates fetch, caching, inference, and persistence |
+| **Model Service**       | Python 3.12 / FastAPI | 5000                           | Loads serialized model artifacts and performs inference |
+| **Fetch Service**       | Python 3.12 / FastAPI | 5500                           | Generates canonical feature superset from GFZ data      |
+| **PostgreSQL**          | 15+                   | 5332 (host) / 5432 (container) | Stores models, cached features, predictions             |
 
 All services are containerized and run together with **Docker Compose**.
 
@@ -38,10 +39,26 @@ All services are containerized and run together with **Docker Compose**.
 
 ## Data Flow Overview
 
-1. **Fetch Service** downloads the latest input dataset and generates features (_based on model .py file_).
-2. **Model Service** retrieves feature requirements from Postgres, loads the model, and predicts the next F10.7 flux value.
-3. **Spring Boot Backend** coordinates the process and exposes `/api/predictions/run` to clients.
-4. **PostgreSQL** stores models, features, predictions, and ground truths.
+1. The Spring Boot backend receives a prediction request.
+2. The backend checks if features for the current date exist in `features_daily`.
+3. If not cached:
+   - Backend calls Fetch Service (`/latest`)
+   - Stores canonical feature superset in PostgreSQL.
+4. Backend sends features to Model Service (`/predict/{model_id}`).
+5. Model Service:
+   - Loads `{model_id}.pkl`
+   - Uses its internally stored feature order
+   - Performs inference.
+6. Backend stores prediction results in `predictions` table.
+
+---
+
+## System Properties
+
+- Fetch Service is stateless and model-agnostic.
+- Model Service is stateless and does not access the database.
+- Backend owns feature caching and prediction persistence.
+- All services communicate over Docker bridge network.
 
 ---
 
@@ -55,11 +72,17 @@ docker compose up --build
 
 If you’re coding in IntelliJ and want live debugging:
 
-1. Run only the database and model service in Docker:
+1. Run only the database and ML services in Docker:
 
 ```bash
-docker compose up db model-service flask-service
+docker compose up db model-service fetch-service --build
 ```
+
+> _NOTE_: To restart containers, first use
+>
+> ```bash
+> docker compose down -v
+> ```
 
 2. In IntelliJ → Run Configuration → Active Profiles:
 
@@ -83,8 +106,12 @@ Inside Intellij IDEA, be sure to open the project with the 'spring-boot' file in
 
 To access the database, go to the IntelliJ terminal and enter the following commands (make sure Docker is running in the background):
 
-> docker exec -it postgres-spring-boot bash
+```bash
+docker exec -it postgres-spring-boot bash
+```
 
-> psql -U aspteam -d forecastdb
+```bash
+psql -U aspteam -d forecastdb
+```
 
 From there, you can see/access the tables & contents using basic SQL commands.

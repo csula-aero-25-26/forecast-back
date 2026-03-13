@@ -7,3 +7,4 @@ pydantic
 fastapi
 uvicorn
 psycopg2-binary
+xgboost

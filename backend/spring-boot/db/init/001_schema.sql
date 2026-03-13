@@ -1,5 +1,5 @@
 -- ==========================================
--- CSULA Aerospace Senior Design – First DB Implement
+-- CSULA Aerospace Senior Design – DB Initialization
 -- Core tables for model tracking and forecasts
 -- ==========================================
 
@@ -10,45 +10,86 @@ CREATE TABLE IF NOT EXISTS model_registry (
     description  TEXT,                          -- short notes (optional)
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Remove deprecated model
+DELETE FROM model_registry
+WHERE model_id = 'lgb_f107_lag27_ap_lag3_horizon_1';
 
-INSERT INTO model_registry (model_id, family, description)
-VALUES (
-    'lgb_f107_lag27_ap_lag3_horizon_1', 'lightgbm',
-    'LightGBM model using 27-day lagged F10.7 and 3-day lagged ap indices, predicting 1 day ahead'
-)
-ON CONFLICT (model_id) DO NOTHING;
-
+-- <Model Family> | Features: <schema> | Horizon: <X days> | Validation: <method>
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_1',
            'linear_regression',
-           'Linear regression using 27 F10.7 lags + SN, predicting 1 day ahead'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 1 day | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_7',
            'linear_regression',
-           'Linear regression using 27 F10.7 lags + SN, predicting 1 week ahead'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 7 days | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'persistence_horizon_1',
            'baseline',
-           'Persistence baseline model, predicting 1 day ahead'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 1 day | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
 
 INSERT INTO model_registry (model_id, family, description)
 VALUES (
            'persistence_horizon_7',
            'baseline',
-           'Persistence baseline model, predicting 1 week ahead'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 7 days | Validation: Walk-forward evaluation'
        )
-ON CONFLICT (model_id) DO NOTHING;
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'lgbm_flux_27_lags_horizon_1',
+           'lightgbm',
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'lgbm_flux_27_lags_horizon_7',
+           'lightgbm',
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'xgb_flux_27_lags_horizon_1',
+           'xgboost',
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
+
+
+INSERT INTO model_registry (model_id, family, description)
+VALUES (
+           'xgb_flux_27_lags_horizon_7',
+           'xgboost',
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+       )
+ON CONFLICT (model_id) DO UPDATE
+SET description = EXCLUDED.description;
 
 -- ️Predictions --
 CREATE TABLE IF NOT EXISTS predictions (
@@ -128,110 +169,41 @@ VALUES
     ('SN', 'SILSO', 'current', 'Daily international sunspot number')
 ON CONFLICT (name) DO NOTHING;
 
-
--- Model Features (Links Features to Models, Lookup) --
-CREATE TABLE IF NOT EXISTS model_features (
-    model_id TEXT REFERENCES model_registry(model_id),
-    feature_name TEXT REFERENCES feature_catalog(name),
-    PRIMARY KEY (model_id, feature_name)
-);
-
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'linreg_flux_27_lags_ssn_horizon_1', name
-FROM feature_catalog
-WHERE name IN (
-    'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-    'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-    'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-    'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-    'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-    'f107_lag_26','f107_lag_27',
-    'SN'
-)
-ON CONFLICT (model_id, feature_name) DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'linreg_flux_27_lags_ssn_horizon_7', name
-FROM feature_catalog
-WHERE name IN (
-               'F10.7obs', 'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-               'f107_lag_26','f107_lag_27',
-               'SN'
-    )
-ON CONFLICT (model_id, feature_name) DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-SELECT 'lgb_f107_lag27_ap_lag3_horizon_1', name
-FROM feature_catalog
-WHERE name IN (
-               'f107_lag_1','f107_lag_2','f107_lag_3','f107_lag_4','f107_lag_5',
-               'f107_lag_6','f107_lag_7','f107_lag_8','f107_lag_9','f107_lag_10',
-               'f107_lag_11','f107_lag_12','f107_lag_13','f107_lag_14','f107_lag_15',
-               'f107_lag_16','f107_lag_17','f107_lag_18','f107_lag_19','f107_lag_20',
-               'f107_lag_21','f107_lag_22','f107_lag_23','f107_lag_24','f107_lag_25',
-               'f107_lag_26','f107_lag_27',
-               'ap_mean','ap_max',
-               'ap_mean_lag1','ap_max_lag1','ap_mean_lag2','ap_max_lag2','ap_mean_lag3','ap_max_lag3'
-    )
-ON CONFLICT (model_id, feature_name) DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-VALUES
-    ('persistence_horizon_1','F10.7obs')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO model_features (model_id, feature_name)
-VALUES
-    ('persistence_horizon_7','F10.7obs')
-ON CONFLICT DO NOTHING;
-
+DROP TABLE IF EXISTS model_features CASCADE;
 
 
 -- Features Daily (Actual Features Used by Model) --
-CREATE TABLE IF NOT EXISTS features_daily (
-    date DATE PRIMARY KEY,
-    flux DOUBLE PRECISION,
-    adjflux DOUBLE PRECISION,
-    target_flux DOUBLE PRECISION,
-    lag1 DOUBLE PRECISION,
-    lag2 DOUBLE PRECISION,
-    lag3 DOUBLE PRECISION,
-    lag4 DOUBLE PRECISION,
-    lag5 DOUBLE PRECISION,
-    lag6 DOUBLE PRECISION,
-    lag7 DOUBLE PRECISION,
-    lag8 DOUBLE PRECISION,
-    lag9 DOUBLE PRECISION,
-    lag10 DOUBLE PRECISION,
-    lag11 DOUBLE PRECISION,
-    lag12 DOUBLE PRECISION,
-    lag13 DOUBLE PRECISION,
-    lag14 DOUBLE PRECISION,
-    lag15 DOUBLE PRECISION,
-    lag16 DOUBLE PRECISION,
-    lag17 DOUBLE PRECISION,
-    lag18 DOUBLE PRECISION,
-    lag19 DOUBLE PRECISION,
-    lag20 DOUBLE PRECISION,
-    lag21 DOUBLE PRECISION,
-    lag22 DOUBLE PRECISION,
-    lag23 DOUBLE PRECISION,
-    lag24 DOUBLE PRECISION,
-    lag25 DOUBLE PRECISION,
-    lag26 DOUBLE PRECISION,
-    lag27 DOUBLE PRECISION,
-    ap_mean DOUBLE PRECISION,
-    ap_max DOUBLE PRECISION,
-    ap_mean_lag1 DOUBLE PRECISION,
-    ap_max_lag1 DOUBLE PRECISION,
-    ap_mean_lag2 DOUBLE PRECISION,
-    ap_max_lag2 DOUBLE PRECISION,
-    ap_mean_lag3 DOUBLE PRECISION,
-    ap_max_lag3 DOUBLE PRECISION
+CREATE TABLE features_daily (
+                                date DATE PRIMARY KEY,
+                                f107_obs DOUBLE PRECISION NOT NULL,
+                                sn DOUBLE PRECISION,
+                                f107_lag_1 DOUBLE PRECISION,
+                                f107_lag_2 DOUBLE PRECISION,
+                                f107_lag_3 DOUBLE PRECISION,
+                                f107_lag_4 DOUBLE PRECISION,
+                                f107_lag_5 DOUBLE PRECISION,
+                                f107_lag_6 DOUBLE PRECISION,
+                                f107_lag_7 DOUBLE PRECISION,
+                                f107_lag_8 DOUBLE PRECISION,
+                                f107_lag_9 DOUBLE PRECISION,
+                                f107_lag_10 DOUBLE PRECISION,
+                                f107_lag_11 DOUBLE PRECISION,
+                                f107_lag_12 DOUBLE PRECISION,
+                                f107_lag_13 DOUBLE PRECISION,
+                                f107_lag_14 DOUBLE PRECISION,
+                                f107_lag_15 DOUBLE PRECISION,
+                                f107_lag_16 DOUBLE PRECISION,
+                                f107_lag_17 DOUBLE PRECISION,
+                                f107_lag_18 DOUBLE PRECISION,
+                                f107_lag_19 DOUBLE PRECISION,
+                                f107_lag_20 DOUBLE PRECISION,
+                                f107_lag_21 DOUBLE PRECISION,
+                                f107_lag_22 DOUBLE PRECISION,
+                                f107_lag_23 DOUBLE PRECISION,
+                                f107_lag_24 DOUBLE PRECISION,
+                                f107_lag_25 DOUBLE PRECISION,
+                                f107_lag_26 DOUBLE PRECISION,
+                                f107_lag_27 DOUBLE PRECISION
 );
 
 
