@@ -1,16 +1,14 @@
-package aerospaceproject.phase2.services;
+package aerospaceproject.services;
 
-import aerospaceproject.phase2.entities.GroundTruths;
-import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.entities.Prediction;
-import aerospaceproject.phase2.repositories.PredictionRepository;
+import aerospaceproject.entities.GroundTruth;
+import aerospaceproject.entities.ModelRegistry;
+import aerospaceproject.entities.Prediction;
+import aerospaceproject.repositories.PredictionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class PredictionService {
@@ -56,7 +54,22 @@ public class PredictionService {
         return predictionRepository.findByModelAndTargetDate(model, targetDate);
     }
 
-    public Double computeAbsoluteError(Prediction prediction, GroundTruths gt) {
+    public List<Map<String, Object>> getPredictionHistory(String modelId) {
+        List<Prediction> predictions =
+                predictionRepository.findByModel_ModelIdOrderByTargetDateAsc(modelId);
+        List<Map<String, Object>> result = new ArrayList();
+
+        for (Prediction p : predictions) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("targetDate", p.getTargetDate());
+            entry.put("value", p.getPredictedValue());
+            result.add(entry);
+        }
+
+        return result;
+    }
+
+    public Double computeAbsoluteError(Prediction prediction, GroundTruth gt) {
         return Math.abs(prediction.getPredictedValue() - gt.getActualValue());
     }
 }

@@ -1,7 +1,7 @@
-package aerospaceproject.phase2.repositories;
+package aerospaceproject.repositories;
 
-import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.entities.Prediction;
+import aerospaceproject.entities.ModelRegistry;
+import aerospaceproject.entities.Prediction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +16,8 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByTargetDate(LocalDate targetDate);
 
     Optional<Prediction> findByModelAndTargetDate(ModelRegistry model, LocalDate targetDate);
+
+    List<Prediction> findByModel_ModelIdOrderByTargetDateAsc(String modelId);
 
     List<Prediction> findTop10ByOrderByRequestedAtDesc();
 }

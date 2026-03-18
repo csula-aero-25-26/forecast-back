@@ -1,7 +1,7 @@
-package aerospaceproject.phase2.services;
+package aerospaceproject.services;
 
-import aerospaceproject.phase2.entities.FeaturesDaily;
-import aerospaceproject.phase2.repositories.FeaturesDailyRepository;
+import aerospaceproject.entities.FeaturesDaily;
+import aerospaceproject.repositories.FeaturesDailyRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

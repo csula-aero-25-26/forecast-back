@@ -1,5 +1,5 @@
-package aerospaceproject.phase2.repositories;
-import aerospaceproject.phase2.entities.ModelRegistry;
+package aerospaceproject.repositories;
+import aerospaceproject.entities.ModelRegistry;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

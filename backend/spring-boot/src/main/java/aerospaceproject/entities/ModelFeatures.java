@@ -1,4 +1,4 @@
-package aerospaceproject.phase2.entities;
+package aerospaceproject.entities;
 
 // This class probably isn't needed since we have a join table in ModelRegistry
 

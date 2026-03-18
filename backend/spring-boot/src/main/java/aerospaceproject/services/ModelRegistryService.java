@@ -1,7 +1,7 @@
-package aerospaceproject.phase2.services;
+package aerospaceproject.services;
 
-import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.repositories.ModelRegistryRepository;
+import aerospaceproject.entities.ModelRegistry;
+import aerospaceproject.repositories.ModelRegistryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

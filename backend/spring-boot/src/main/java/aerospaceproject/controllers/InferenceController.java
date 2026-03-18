@@ -1,12 +1,12 @@
-package aerospaceproject.phase2.controllers;
+package aerospaceproject.controllers;
 
-import aerospaceproject.phase2.dto.ManualOverrideRequest;
-import aerospaceproject.phase2.entities.FeaturesDaily;
-import aerospaceproject.phase2.entities.ModelRegistry;
-import aerospaceproject.phase2.entities.Prediction;
-import aerospaceproject.phase2.repositories.ModelRegistryRepository;
-import aerospaceproject.phase2.services.PredictionService;
-import aerospaceproject.phase2.services.FeaturesDailyService;
+import aerospaceproject.dto.ManualOverrideRequest;
+import aerospaceproject.entities.FeaturesDaily;
+import aerospaceproject.entities.ModelRegistry;
+import aerospaceproject.entities.Prediction;
+import aerospaceproject.repositories.ModelRegistryRepository;
+import aerospaceproject.services.PredictionService;
+import aerospaceproject.services.FeaturesDailyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,8 @@
-package aerospaceproject.phase2.controllers;
+package aerospaceproject.controllers;
 
-import aerospaceproject.phase2.entities.Prediction;
-import aerospaceproject.phase2.services.PredictionService;
+import aerospaceproject.entities.Prediction;
+import aerospaceproject.services.PredictionService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +33,10 @@ public class PredictionController {
     @GetMapping("/model/{modelId}")
     public List<Prediction> getByModel(@PathVariable String modelId) {
         return predictionService.getByModel(modelId);
+    }
+
+    @GetMapping("/model/{modelId}/history")
+    public ResponseEntity<?> getHistory(@PathVariable String modelId) {
+        return ResponseEntity.ok(predictionService.getPredictionHistory(modelId));
     }
 }

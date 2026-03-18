@@ -1,4 +1,4 @@
-package aerospaceproject.phase2.dto;
+package aerospaceproject.dto;
 
 import java.util.Map;
 

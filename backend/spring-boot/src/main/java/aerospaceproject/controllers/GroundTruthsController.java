@@ -1,7 +1,7 @@
-package aerospaceproject.phase2.controllers;
+package aerospaceproject.controllers;
 
-import aerospaceproject.phase2.entities.GroundTruths;
-import aerospaceproject.phase2.services.GroundTruthsService;
+import aerospaceproject.entities.GroundTruth;
+import aerospaceproject.services.GroundTruthService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,29 +12,29 @@ import java.util.List;
 @RequestMapping("/api/ground-truths")
 public class GroundTruthsController {
 
-    private final GroundTruthsService groundTruthsService;
+    private final GroundTruthService groundTruthService;
 
-    public GroundTruthsController(GroundTruthsService groundTruthsService) {
-        this.groundTruthsService = groundTruthsService;
+    public GroundTruthsController(GroundTruthService groundTruthService) {
+        this.groundTruthService = groundTruthService;
     }
 
     @GetMapping
-    public List<GroundTruths> getAll() {
-        return groundTruthsService.getAll();
+    public List<GroundTruth> getAll() {
+        return groundTruthService.getAll();
     }
 
     @GetMapping("/{date}")
-    public GroundTruths getByDate(
+    public GroundTruth getByDate(
             @PathVariable
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) // YYYY-MM-DD
             LocalDate date) {
-        return groundTruthsService.getByDate(date)
+        return groundTruthService.getByDate(date)
                 .orElseThrow(() -> new RuntimeException("Ground Truth not found"));
     }
 
     @PostMapping
-    public GroundTruths create(@RequestBody GroundTruths groundTruth) {
-        return groundTruthsService.save(
+    public GroundTruth create(@RequestBody GroundTruth groundTruth) {
+        return groundTruthService.save(
                 groundTruth.getObservationDate(),
                 groundTruth.getActualValue(),
                 groundTruth.getSourceMeta()

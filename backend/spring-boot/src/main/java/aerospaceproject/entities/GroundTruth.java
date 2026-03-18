@@ -1,11 +1,11 @@
-package aerospaceproject.phase2.entities;
+package aerospaceproject.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "ground_truths")
-public class GroundTruths {
+public class GroundTruth {
 
     @Id
     @Column(name = "observation_date", nullable = false)
@@ -17,9 +17,9 @@ public class GroundTruths {
     @Column(name = "source_meta", columnDefinition = "jsonb")
     private String sourceMeta;
 
-    protected GroundTruths () {}
+    protected GroundTruth() {}
 
-    public GroundTruths(LocalDate observationDate, Double actualValue) {
+    public GroundTruth(LocalDate observationDate, Double actualValue) {
         this.observationDate = observationDate;
         this.actualValue = actualValue;
     }

@@ -1,4 +1,4 @@
-package aerospaceproject.phase2.entities;
+package aerospaceproject.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
