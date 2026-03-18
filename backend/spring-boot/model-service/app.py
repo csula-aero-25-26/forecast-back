@@ -76,7 +76,7 @@ def list_models():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     cur.execute("""
-                SELECT model_id, family, description, created_at
+                SELECT model_id, family, description, features, created_at
                 FROM model_registry
                 ORDER BY created_at DESC;
                 """)

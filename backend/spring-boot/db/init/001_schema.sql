@@ -3,95 +3,117 @@
 -- Core tables for model tracking and forecasts
 -- ==========================================
 
--- Model Registry --
+
+-------------------------------------- Model Registry --------------------------------------
+
 CREATE TABLE IF NOT EXISTS model_registry (
-    model_id     TEXT PRIMARY KEY,              -- e.g. 'rf-v2-aplags'
-    family       TEXT NOT NULL,                 -- e.g. 'random_forest', 'lstm'
-    description  TEXT,                          -- short notes (optional)
+    model_id     TEXT PRIMARY KEY,
+    family       TEXT NOT NULL,
+    description  TEXT,
+    features     JSONB NOT NULL,
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+
 -- Remove deprecated model
 DELETE FROM model_registry
 WHERE model_id = 'lgb_f107_lag27_ap_lag3_horizon_1';
 
 -- <Model Family> | Features: <schema> | Horizon: <X days> | Validation: <method>
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_1',
            'linear_regression',
-           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 1 day | Validation: Walk-forward evaluation'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 1 day | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27","sn"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'linreg_flux_27_lags_ssn_horizon_7',
            'linear_regression',
-           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 7 days | Validation: Walk-forward evaluation'
+           'Linear Regression | Features: F10.7obs + f107_lag_1-27 + SN | Horizon: 7 days | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27","sn"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'persistence_horizon_1',
            'baseline',
-           'Persistence Baseline | Features: F10.7obs | Horizon: 1 day | Validation: Walk-forward evaluation'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 1 day | Validation: Walk-forward evaluation',
+           '["f107_obs"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'persistence_horizon_7',
            'baseline',
-           'Persistence Baseline | Features: F10.7obs | Horizon: 7 days | Validation: Walk-forward evaluation'
+           'Persistence Baseline | Features: F10.7obs | Horizon: 7 days | Validation: Walk-forward evaluation',
+           '["f107_obs"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'lgbm_flux_27_lags_horizon_1',
            'lightgbm',
-           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'lgbm_flux_27_lags_horizon_7',
            'lightgbm',
-           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+           'LightGBM | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'xgb_flux_27_lags_horizon_1',
            'xgboost',
-           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation'
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 1 day | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
 
-INSERT INTO model_registry (model_id, family, description)
+INSERT INTO model_registry (model_id, family, description, features)
 VALUES (
            'xgb_flux_27_lags_horizon_7',
            'xgboost',
-           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation'
+           'XGBoost | Features: F10.7obs + f107_lag_1-27 | Horizon: 7 days | Validation: Walk-forward evaluation',
+           '["f107_obs","f107_lag_1","f107_lag_2","f107_lag_3","f107_lag_4","f107_lag_5","f107_lag_6","f107_lag_7","f107_lag_8","f107_lag_9","f107_lag_10","f107_lag_11","f107_lag_12","f107_lag_13","f107_lag_14","f107_lag_15","f107_lag_16","f107_lag_17","f107_lag_18","f107_lag_19","f107_lag_20","f107_lag_21","f107_lag_22","f107_lag_23","f107_lag_24","f107_lag_25","f107_lag_26","f107_lag_27"]'::jsonb
        )
 ON CONFLICT (model_id) DO UPDATE
-SET description = EXCLUDED.description;
+SET description = EXCLUDED.description,
+    features = EXCLUDED.features;
 
--- ️Predictions --
+
+-------------------------------------- Predictions --------------------------------------
+
 CREATE TABLE IF NOT EXISTS predictions (
     id               BIGSERIAL PRIMARY KEY,
     requested_at     TIMESTAMPTZ DEFAULT NOW(),
@@ -126,7 +148,7 @@ CREATE TABLE IF NOT EXISTS feature_catalog (
 INSERT INTO feature_catalog (name, source, transformation, description)
 VALUES
     -- F107 lags
-    ('F10.7obs','NOAA_F107','current','Observed daily F10.7 solar flux'),
+    ('f107_obs','NOAA_F107','current','Observed daily F10.7 solar flux'),
     ('f107_lag_1',  'NOAA_F107', 'lag(1)',  'F10.7 value 1 day ago'),
     ('f107_lag_2',  'NOAA_F107', 'lag(2)',  'F10.7 value 2 days ago'),
     ('f107_lag_3',  'NOAA_F107', 'lag(3)',  'F10.7 value 3 days ago'),
@@ -172,7 +194,8 @@ ON CONFLICT (name) DO NOTHING;
 DROP TABLE IF EXISTS model_features CASCADE;
 
 
--- Features Daily (Actual Features Used by Model) --
+-------------------------------------- Features Daily (Actual Features Used by Model) --------------------------------------
+
 CREATE TABLE features_daily (
                                 date DATE PRIMARY KEY,
                                 f107_obs DOUBLE PRECISION NOT NULL,
@@ -207,9 +230,8 @@ CREATE TABLE features_daily (
 );
 
 
--- ==========================================
--- Indexes
--- ==========================================
+-------------------------------------- Indexes --------------------------------------
+
 CREATE INDEX IF NOT EXISTS idx_predictions_model_id
     ON predictions(model_id);
 
