@@ -28,7 +28,7 @@ public class FeatureCatalog {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @ManyToMany(mappedBy = "features")
+    @Transient
     private Set<ModelRegistry> models = new HashSet<>();
 
     protected FeatureCatalog() {}

@@ -22,13 +22,9 @@ public class ModelRegistry {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @ManyToMany
-    @JoinTable(
-            name = "model_features",
-            joinColumns = @JoinColumn(name = "model_id"),
-            inverseJoinColumns = @JoinColumn(name = "feature_name")
-    )
-    private Set<FeatureCatalog> features = new HashSet<>();
+    @Column(name = "features", columnDefinition = "jsonb")
+    private String features;
+
 
     protected ModelRegistry() {}
 
@@ -55,7 +51,6 @@ public class ModelRegistry {
         return createdAt;
     }
 
-    public Set<FeatureCatalog> getFeatures() {
-        return features;
-    }
+    public String getFeatures() { return features; }
+
 }
