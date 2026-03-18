@@ -11,7 +11,7 @@ public class GroundTruths {
     @Column(name = "observation_date", nullable = false)
     private LocalDate observationDate;
 
-    @Column(name = "actual_value", nullable = false)
+    @Column(name = "actual_flux", nullable = false)
     private Double actualValue;
 
     @Column(name = "source_meta", columnDefinition = "jsonb")

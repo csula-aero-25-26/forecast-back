@@ -10,8 +10,9 @@ import java.util.Set;
 public class FeatureCatalog {
 
     @Id
-    @Column(name = "feature_id", nullable = false)
-    private String featureId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "feature_id")
+    private Long featureId;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -33,12 +34,12 @@ public class FeatureCatalog {
 
     protected FeatureCatalog() {}
 
-    public FeatureCatalog(String featureId,
-                          String name,
-                          String source,
-                          String transformation,
-                          String description) {
-        this.featureId = featureId;
+    public FeatureCatalog(
+            String name,
+            String source,
+            String transformation,
+            String description
+    ) {
         this.name = name;
         this.source = source;
         this.transformation = transformation;
@@ -46,7 +47,7 @@ public class FeatureCatalog {
         this.createdAt = Instant.now();
     }
 
-    public String getFeatureId() {
+    public Long getFeatureId() {
         return featureId;
     }
 
