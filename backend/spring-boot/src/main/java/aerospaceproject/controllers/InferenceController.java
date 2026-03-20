@@ -93,26 +93,30 @@ public class InferenceController {
     }
 
 
-    // Refactored Version of predictFromLatestV2 (uses new phase2 classes)
-    @GetMapping("/predict-latest-v2-phase2")
-    public ResponseEntity<?> predictFromLatestV2Phase2(
-            @RequestParam(defaultValue = "lgbm_flux_27_lags_horizon_1") String modelId
+    @GetMapping({"/predict-latest-v2-phase2", "/predict/{modelId}"})
+    public ResponseEntity<?> predict(
+            @PathVariable(required = false) String modelId,
+            @RequestParam(name = "modelId", required = false) String modelIdParam
     ) {
+        String resolvedModelId =
+                (modelId != null) ? modelId :
+                        (modelIdParam != null) ? modelIdParam :
+                                "lgbm_flux_27_lags_horizon_1"; // default
 
-        logger.info("Phase2 Prediction requested with model={}", modelId);
+        logger.info("Phase2 Prediction requested with model={}", resolvedModelId);
 
         try {
 
             // Validate model exists
-            ModelRegistry model = modelRegistryRepository.findById(modelId)
-                    .orElseThrow(() -> new RuntimeException("Model not found: " + modelId));
+            ModelRegistry model = modelRegistryRepository.findById(resolvedModelId)
+                    .orElseThrow(() -> new RuntimeException("Model not found: " + resolvedModelId));
 
             // Fetch + Cache features
             Map<String, Object> features = fetchAndCacheFeatures();
             logger.info("Successfully retrieved (and cached if needed) features");
 
             // Call Model Service
-            String predictUrl = buildPredictUrl(modelUrl, modelId);
+            String predictUrl = buildPredictUrl(modelUrl, resolvedModelId);
             logger.info("Calling model-service at {}", predictUrl);
 
             HttpHeaders headers = new HttpHeaders();
@@ -141,7 +145,7 @@ public class InferenceController {
             logger.info("Prediction received: {}", predictedValue);
 
             // Determine horizon
-            Integer horizonDays = extractHorizonFromModelId(modelId);
+            Integer horizonDays = extractHorizonFromModelId(resolvedModelId);
             LocalDate today = LocalDate.now();
             LocalDate targetDate = today.plusDays(horizonDays);
 
@@ -152,7 +156,7 @@ public class InferenceController {
 
             if (existing.isPresent()) {
                 logger.info("Prediction already exists for model={} and target date={}",
-                        modelId, targetDate);
+                        resolvedModelId, targetDate);
                 prediction = existing.get();
             } else {
                 prediction = predictionService.savePrediction(
@@ -171,7 +175,7 @@ public class InferenceController {
             Map<String, Object> result = new HashMap<>();
             result.put("predictionId", prediction.getId());
             result.put("predictedValue", predictedValue);
-            result.put("modelId", modelId);
+            result.put("modelId", resolvedModelId);
             result.put("horizonDays", horizonDays);
             result.put("features", features);
 
