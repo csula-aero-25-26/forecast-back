@@ -2,7 +2,9 @@ package aerospaceproject.repositories;
 
 import aerospaceproject.entities.ModelRegistry;
 import aerospaceproject.entities.Prediction;
+import aerospaceproject.dto.PredictionHistoryDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -20,4 +22,18 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByModel_ModelIdOrderByTargetDateAsc(String modelId);
 
     List<Prediction> findTop10ByOrderByRequestedAtDesc();
+
+    @Query("""
+            SELECT new aerospaceproject.dto.PredictionHistoryDTO(
+                p.targetDate,
+                p.predictedValue,
+                g.actualValue
+            )
+            FROM Prediction p
+            JOIN GroundTruth g
+                ON p.targetDate = g.observationDate
+            WHERE p.model.modelId = :modelId
+            ORDER BY p.targetDate
+           """)
+    List<PredictionHistoryDTO> getPredictionHistory(String modelId);
 }

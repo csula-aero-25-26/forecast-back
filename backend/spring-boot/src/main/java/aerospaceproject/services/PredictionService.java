@@ -1,5 +1,6 @@
 package aerospaceproject.services;
 
+import aerospaceproject.dto.PredictionHistoryDTO;
 import aerospaceproject.entities.GroundTruth;
 import aerospaceproject.entities.ModelRegistry;
 import aerospaceproject.entities.Prediction;
@@ -67,6 +68,10 @@ public class PredictionService {
         }
 
         return result;
+    }
+
+    public List<PredictionHistoryDTO> getHistory(String modelId) {
+        return predictionRepository.getPredictionHistory(modelId);
     }
 
     public Double computeAbsoluteError(Prediction prediction, GroundTruth gt) {
