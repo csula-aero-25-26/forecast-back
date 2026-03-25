@@ -29,11 +29,11 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                 p.predictedValue,
                 g.actualValue
             )
-            FROM Prediction p
-            JOIN GroundTruth g
-                ON p.targetDate = g.observationDate
-            WHERE p.model.modelId = :modelId
-            ORDER BY p.targetDate
+            FROM GroundTruth g
+            LEFT JOIN Prediction p
+                ON g.observationDate = p.targetDate
+                AND (:modelId IS NULL OR p.model.modelId = :modelId)
+            ORDER BY g.observationDate
            """)
     List<PredictionHistoryDTO> getPredictionHistory(String modelId);
 }

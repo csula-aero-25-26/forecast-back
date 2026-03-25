@@ -19,7 +19,7 @@ public class MetricsController {
 
     @GetMapping("/history")
     public ResponseEntity<?> getHistory(
-            @RequestParam String modelId
+            @RequestParam(required = false) String modelId
     ) {
         return ResponseEntity.ok(
           predictionService.getHistory(modelId)

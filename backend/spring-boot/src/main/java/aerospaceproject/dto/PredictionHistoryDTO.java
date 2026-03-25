@@ -13,7 +13,12 @@ public class PredictionHistoryDTO {
         this.date = date;
         this.predicted = predicted;
         this.actual = actual;
-        this.error = actual-predicted;
+
+        if (predicted != null && actual != null) {
+            this.error = Math.round(Math.abs(actual - predicted) * 100.0) / 100.0;
+        } else {
+            this.error = null;
+        }
     }
 
     public LocalDate getDate() {
