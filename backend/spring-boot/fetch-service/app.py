@@ -17,7 +17,7 @@ GFZ_URL = "https://kp.gfz.de/app/files/Kp_ap_Ap_SN_F107_since_1932.txt"
 GFZ_RAW_CACHE = None
 GFZ_LAST_FETCH = None
 
-CACHE_TTL = timedelta(minutes=1)
+CACHE_TTL = timedelta(hours=12)
 
 
 # GFZ RAW FETCH (CACHED)
