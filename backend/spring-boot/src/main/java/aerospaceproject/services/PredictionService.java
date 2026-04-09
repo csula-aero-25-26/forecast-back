@@ -1,5 +1,6 @@
 package aerospaceproject.services;
 
+import aerospaceproject.dto.GroundTruthDTO;
 import aerospaceproject.dto.PredictionHistoryDTO;
 import aerospaceproject.entities.GroundTruth;
 import aerospaceproject.entities.ModelRegistry;
@@ -10,13 +11,17 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PredictionService {
     private final PredictionRepository predictionRepository;
+    private final FetchServiceClient fetchServiceClient;
 
-    public PredictionService(PredictionRepository predictionRepository) {
+    public PredictionService(PredictionRepository predictionRepository,
+                             FetchServiceClient fetchServiceClient) {
         this.predictionRepository = predictionRepository;
+        this.fetchServiceClient = fetchServiceClient;
     }
 
     public Prediction savePrediction(ModelRegistry model,
@@ -55,6 +60,7 @@ public class PredictionService {
         return predictionRepository.findByModelAndTargetDate(model, targetDate);
     }
 
+    // Returns past predictions sorted
     public List<Map<String, Object>> getPredictionHistory(String modelId) {
         List<Prediction> predictions =
                 predictionRepository.findByModel_ModelIdOrderByTargetDateAsc(modelId);
@@ -70,11 +76,37 @@ public class PredictionService {
         return result;
     }
 
+    // To be used for the History Graph
     public List<PredictionHistoryDTO> getHistory(String modelId) {
-        return predictionRepository.getPredictionHistory(modelId);
+
+        List<Prediction> predictions =
+                predictionRepository.findByModel_ModelIdOrderByTargetDate(modelId);
+
+        List<GroundTruthDTO> groundTruths =
+                fetchServiceClient.getGroundTruths(365);
+
+        Map<LocalDate, Double> truthMap = groundTruths.stream()
+                .collect(Collectors.toMap(
+                        GroundTruthDTO::getObservation_date,
+                        GroundTruthDTO::getActual_flux
+                ));
+
+        List<PredictionHistoryDTO> result = new ArrayList<>();
+
+        for (Prediction p : predictions) {
+            Double actual = truthMap.get(p.getTargetDate());
+
+            result.add(new PredictionHistoryDTO(
+                    p.getTargetDate(),
+                    p.getPredictedValue(),
+                    actual
+            ));
+        }
+
+        return result;
     }
 
-    public Double computeAbsoluteError(Prediction prediction, GroundTruth gt) {
-        return Math.abs(prediction.getPredictedValue() - gt.getActualValue());
-    }
+//    public Double computeAbsoluteError(Prediction prediction, GroundTruth gt) {
+//        return Math.abs(prediction.getPredictedValue() - gt.getActualValue());
+//    }
 }

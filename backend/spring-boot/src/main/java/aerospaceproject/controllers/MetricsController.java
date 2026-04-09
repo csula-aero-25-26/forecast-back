@@ -17,6 +17,7 @@ public class MetricsController {
         this.predictionService = predictionService;
     }
 
+    // For the historical data graph
     @GetMapping("/history")
     public ResponseEntity<?> getHistory(
             @RequestParam(required = false) String modelId
