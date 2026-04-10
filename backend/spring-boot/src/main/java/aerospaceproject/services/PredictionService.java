@@ -2,7 +2,6 @@ package aerospaceproject.services;
 
 import aerospaceproject.dto.GroundTruthDTO;
 import aerospaceproject.dto.PredictionHistoryDTO;
-import aerospaceproject.entities.GroundTruth;
 import aerospaceproject.entities.ModelRegistry;
 import aerospaceproject.entities.Prediction;
 import aerospaceproject.repositories.PredictionRepository;

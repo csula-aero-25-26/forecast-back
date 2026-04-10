@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+// For the historical data graph
 @RestController
 @RequestMapping("/api/metrics")
 public class MetricsController {
@@ -17,7 +18,7 @@ public class MetricsController {
         this.predictionService = predictionService;
     }
 
-    // For the historical data graph
+
     @GetMapping("/history")
     public ResponseEntity<?> getHistory(
             @RequestParam(required = false) String modelId
