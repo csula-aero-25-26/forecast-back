@@ -1,5 +1,7 @@
 # Fetch Service (FastAPI + Data Preprocessing)
 
+## Version: *3.0.0*
+
 ## Overview
 
 The **Fetch Service** is a Python FastAPI microservice responsible for
@@ -23,7 +25,7 @@ Spring Boot Backend
        │
        ▼
 Fetch Service (FastAPI)
- ├── Downloads → GFZ dataset
+ ├── Downloads (cached) → GFZ dataset
  ├── Builds → Canonical feature superset
  └── Returns → Latest feature vector (JSON)
        │
@@ -80,14 +82,51 @@ Returns the most recent canonical feature row.
 }
 ```
 
+### `GET /ground-truths`
+
+Returns historical F10.7 solar flux data.
+
+Supports optional query parameters:
+- `days` — number of most recent days to return
+- `start_date` — inclusive start date (`YYYY-MM-DD`)
+- `solar_cycles` — number of most recent solar cycles
+
+Only one parameter may be used at a time.
+
+#### Examples
+
+```bash
+/ground-truths?days=30
+```
+
+```bash
+/ground-truths?start_date=2024-01-01
+```
+
+```bash
+/ground-truths?solar_cycles=1
+```
+
+#### Response
+
+```json
+[
+  {
+    "observation_date": "2026-03-12",
+    "actual_flux": 122.8
+  }
+]
+```
+
 ---
 
 # How It Works
 
-1. The service downloads the latest GFZ dataset.
-2. It extracts F10.7 observed flux and sunspot number (SN).
-3. It generates 27 lagged F10.7 features.
-4. It returns the most recent row as JSON.
+1. The service downloads or retrieves the latest GFZ dataset.
+2. The raw GFZ dataset is cached in memory for 12 hours to avoid repeated downloads.
+3. It extracts F10.7 observed flux and sunspot number (SN).
+4. It generates 27 lagged F10.7 features.
+5. It returns the most recent row as JSON.
 
 The feature set is model-agnostic.
 Individual models select the subset of features they require.
@@ -143,7 +182,7 @@ INFO:     Uvicorn running on http://0.0.0.0:5500
     - Prediction persistence
     - Database interactions
 
-- The Fetch Service is stateless and does not write to PostgreSQL.
+- The Fetch Service is stateless with short-lived in-memory caching (12-hour TTL) and does not write to PostgreSQL.
 
 ---
 

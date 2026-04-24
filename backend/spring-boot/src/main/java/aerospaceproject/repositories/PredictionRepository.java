@@ -13,11 +13,13 @@ import java.util.Optional;
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByModel_ModelId(String modelId);
 
-    List<Prediction> findByTargetDate(LocalDate targetDate);
+//    List<Prediction> findByTargetDate(LocalDate targetDate);
 
     Optional<Prediction> findByModelAndTargetDate(ModelRegistry model, LocalDate targetDate);
 
     List<Prediction> findByModel_ModelIdOrderByTargetDateAsc(String modelId);
 
     List<Prediction> findTop10ByOrderByRequestedAtDesc();
+
+    List<Prediction> findByModel_ModelIdOrderByTargetDate(String modelId);
 }

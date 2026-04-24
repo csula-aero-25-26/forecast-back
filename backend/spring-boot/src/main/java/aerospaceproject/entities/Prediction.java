@@ -13,7 +13,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
-@Table(name = "predictions")
+@Table(
+        name = "predictions",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"model_id", "target_date"})
+        })
 public class Prediction {
 
     @Id
@@ -26,7 +30,7 @@ public class Prediction {
     @Column(name = "prediction_date", nullable = false)
     private LocalDate predictionDate;
 
-    @Column(name = "target_date", nullable = false)
+    @Column(name = "target_date")
     private LocalDate targetDate;
 
     @Column(name = "horizon_days", nullable = false)
@@ -36,7 +40,7 @@ public class Prediction {
     private Double predictedValue;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_id", nullable = false)
+    @JoinColumn(name = "model_id")
     @JsonIgnore
     private ModelRegistry model;
 
