@@ -64,6 +64,8 @@ All services are containerized and run together with **Docker Compose**.
 
 ## Running the Full Stack with Docker
 
+### NOTE: Inside Intellij IDEA, be sure to open the project with the 'spring-boot' file instead of 'backend'
+
 To start everything (backend, database, and model service) in containers:
 
 ```bash
@@ -101,8 +103,6 @@ For integration testing or final demos, switch back to Docker Compose.
 ---
 
 ## Accessing the Database
-
-Inside Intellij IDEA, be sure to open the project with the 'spring-boot' file instead of 'backend'
 
 To access the database, go to the IntelliJ terminal and enter the following commands (make sure Docker is running in the background):
 
